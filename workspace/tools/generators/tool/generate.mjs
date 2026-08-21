@@ -9,6 +9,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = join(HERE, '..', '..', '..');
@@ -84,5 +85,15 @@ export async function generateTool(rawName) {
     `TODO: replace with a real one-line task prompt that exercises the "${name}" tool end-to-end via \`dsh --profile headless --patch plugins/${name}/cordis.yml\`.\n`,
   );
 
-  console.log(`\nGenerated plugin "${name}" at plugins/${name}/. Next: pnpm install, then fill in src/index.ts's execute().`);
+  // The package.json just written declares real devDependencies
+  // (typescript, @deepseek-ai/cordis) nothing in the workspace has
+  // installed yet — the `logic` layer's first verify (`tsc --noEmit`)
+  // fails on a fresh plugin without this, for a reason that has nothing
+  // to do with the plugin's own code.
+  execFileSync('pnpm', ['install', '--filter', name], {
+    cwd: WORKSPACE_ROOT,
+    stdio: 'inherit',
+  });
+
+  console.log(`\nGenerated plugin "${name}" at plugins/${name}/. Next: fill in src/index.ts's execute().`);
 }
