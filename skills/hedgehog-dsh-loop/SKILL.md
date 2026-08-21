@@ -272,6 +272,12 @@ Before claiming `smoke`, confirm the smoke-prompt placeholder at
 task prompt — a `smoke` task claimed against the generator's original
 `TODO: replace...` placeholder will fail `verify` in a way that reads
 like a DSH problem when it's actually an unfinished `scaffold` step.
+Also confirm `DEEPSEEK_API_KEY` resolves (a `workspace/.env` copied from
+`.env.example` and filled in is the usual path) — `smoke` is the first
+layer that boots a real DSH profile and calls the model, so a missing
+key surfaces here as `MISSING_CREDENTIAL`, not as a DSH or plugin bug.
+`hedgehog-bootstrap-deepseek-harness-core` raises this once at project
+start; re-check it here if that was skipped or the key has expired.
 
 Before claiming `bundle`, confirm `smoke` is `complete` — a plugin that
 hasn't proven it boots and completes a real task under DSH has no

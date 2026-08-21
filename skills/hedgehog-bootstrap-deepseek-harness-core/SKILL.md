@@ -52,6 +52,10 @@ Everything under this package's `workspace/`, copied to the repo root:
   `verify-scaffold.mjs` (the `scaffold` layer's verify command —
   structural check only, confirms the generated shape exists and
   parses; `logic`'s `tsc --noEmit` is what actually checks the code).
+- `.env.example` — documents `DEEPSEEK_API_KEY`, the credential DSH's
+  `dsh-credentials-local` provider reads from a project-root `.env`.
+  Copy to `.env` and fill in before any layer past `wiring` runs; `.env`
+  itself is gitignored, never committed.
 
 `node_modules` is not part of the copy — `pnpm install` regenerates it
 from the committed `pnpm-lock.yaml`.
@@ -93,7 +97,20 @@ confirm with something like `pnpm dsh --version` (or whatever the
 package's actual entry point is; verify the real invocation once and
 correct this note if it differs).
 
-### 4. Install
+### 4. Confirm a DeepSeek API credential is available
+
+Nothing through `wiring` needs one — `scaffold`, `logic`, and `wiring`
+are typecheck/structural checks against source files, not a real DSH
+boot. `smoke` (and later, `dsh web`) does: it boots a real profile and
+calls the model, so it needs `DEEPSEEK_API_KEY` resolvable by DSH's
+`dsh-credentials-local` provider. The simplest path is a `.env` file at
+the workspace root — `workspace/.env.example` documents this; copy it
+to `workspace/.env` and fill in the key (gitignored, never committed).
+Confirm with the user this exists or that they'll add it before
+`harness-eng` reaches a plugin's `smoke` layer — raise it now rather
+than letting it surface as a late failure three layers in.
+
+### 5. Install
 
 ```bash
 pnpm install
@@ -105,7 +122,7 @@ and produce no lockfile changes. A lockfile diff here means the shipped
 in this package's `workspace/`, not something to patch locally (see
 **If verification fails**, below).
 
-### 5. Verify
+### 6. Verify
 
 ```bash
 pnpm -r exec tsc --noEmit
@@ -120,7 +137,7 @@ bootstrap. A non-trivial failure here (not "no packages found," an
 actual TypeScript or resolution error) means the shipped toolchain
 config itself is broken.
 
-### 6. Commit
+### 7. Commit
 
 ```
 chore: workspace

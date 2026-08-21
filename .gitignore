@@ -2,3 +2,4 @@ node_modules/
 plugins/*/node_modules/
 plugins/*/lib/
 .pnpm-store/
+.env
