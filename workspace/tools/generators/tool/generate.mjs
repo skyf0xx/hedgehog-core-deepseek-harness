@@ -81,7 +81,7 @@ export async function generateTool(rawName) {
 
   await writeGenerated(
     join(WORKSPACE_ROOT, '.hedgehog', 'dsh-smoke', `${name}.md`),
-    `TODO: replace with a real one-line task prompt that exercises the "${name}" tool end-to-end via \`dsh --profile headless --patch plugins/${name}/cordis.patch.yml\`.\n`,
+    `TODO: replace with a real one-line task prompt that exercises the "${name}" tool end-to-end via \`dsh --profile headless --patch plugins/${name}/cordis.yml\`.\n`,
   );
 
   console.log(`\nGenerated plugin "${name}" at plugins/${name}/. Next: pnpm install, then fill in src/index.ts's execute().`);
