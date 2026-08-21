@@ -376,7 +376,13 @@ boundary`'s check applies regardless of which framing prompted the ask.
 Confirm it with `hedgehog boundary` before offering the handoff: it
 exits 0 only when nothing is in flight, the working tree is clean, and
 the last closed task completed its intent, and names which of the three
-failed otherwise. `hedgehog quiesce` answers only the in-flight third —
+failed otherwise. No layer's `ALLOWED SCOPE` covers `.hedgehog/friction/log.md`,
+so friction entries logged mid-build never ride along with a layer's own
+verify-commit — if it shows uncommitted at this point, commit it
+standalone first (`git add .hedgehog/friction/log.md && git commit -m
+"chore: friction log"`) before running `hedgehog boundary`, or its
+clean-tree check fails on a path no layer was ever going to commit.
+`hedgehog quiesce` answers only the in-flight third —
 the right check while waiting out a correction, not the one for clearing
 context. The same command is what decides any mid-build `/clear` too,
 and `hedgehog boundary --handoff` prints the block the next session
