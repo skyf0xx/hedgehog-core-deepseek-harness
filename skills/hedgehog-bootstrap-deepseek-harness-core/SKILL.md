@@ -56,6 +56,11 @@ Everything under this package's `workspace/`, copied to the repo root:
   `dsh-credentials-local` provider reads from a project-root `.env`.
   Copy to `.env` and fill in before any layer past `wiring` runs; `.env`
   itself is gitignored, never committed.
+- `README.md` — a thin index: what the workspace is, plus a `## Plugins`
+  section. `pnpm generate:tool <name>` appends one bullet here per new
+  plugin, right after the `<!-- plugin-readme-links -->` marker, linking
+  to that plugin's own generated README — this file is never hand-edited
+  beyond that.
 
 `node_modules` is not part of the copy — `pnpm install` regenerates it
 from the committed `pnpm-lock.yaml`.
@@ -114,11 +119,16 @@ are typecheck/structural checks against source files, not a real DSH
 boot. `smoke` (and later, `dsh web`) does: it boots a real profile and
 calls the model, so it needs `DEEPSEEK_API_KEY` resolvable by DSH's
 `dsh-credentials-local` provider. The simplest path is a `.env` file at
-the workspace root — `workspace/.env.example` documents this; copy it
-to `workspace/.env` and fill in the key (gitignored, never committed).
-Confirm with the user this exists or that they'll add it before
-`harness-eng` reaches a plugin's `smoke` layer — raise it now rather
-than letting it surface as a late failure three layers in.
+the repo root — `.env.example` documents this.
+
+Copy `.env.example` to `.env` yourself, leaving `DEEPSEEK_API_KEY=`
+blank — do not put a value in it. Never ask the user to paste the key
+into the conversation; a live credential has no reason to pass through
+chat history or logs. Tell them the file exists and where, and that
+they need to fill in the value directly in their editor or filesystem
+before `harness-eng` reaches a plugin's `smoke` layer — raise this now
+rather than letting it surface as a late failure three layers in. `.env`
+itself is gitignored, never committed.
 
 ### 5. Install
 
