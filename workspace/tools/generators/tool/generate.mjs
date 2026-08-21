@@ -6,6 +6,9 @@
 // `pnpm dsh web --patch` launch loop, and a placeholder smoke-prompt
 // file. It stops exactly where hand judgment starts — the `logic`
 // layer replaces the stub body.
+//
+// `name` is used verbatim as the `plugins/<name>/` directory — this
+// generator never pluralizes it.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
