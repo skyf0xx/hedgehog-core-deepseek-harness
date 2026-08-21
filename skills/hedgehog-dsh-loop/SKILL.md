@@ -31,13 +31,19 @@ is the cross-plugin integration check the per-plugin layers can't be.
 ## Planning intake (Phase 0, before any build layer)
 
 Run once per new plugin, before that plugin's `scaffold` task can be
-claimed. Ask the user directly, before anything else: mechanical intake
-(name + goal + outcome, fast) or the full BMAD shelf (brainstorming →
-brief → PRD → UX spec, the same procedure `full-stack-app`/`pwa-app` run,
-archived to `.hedgehog/BMAD/`)? A trivial single-tool plugin usually
-wants mechanical; a plugin with real ambiguity in its hook, UI, or
-protocol-driver shape can genuinely benefit from BMAD's elicitation —
-the choice is the user's, not fixed by this core.
+claimed. Always surface this as an explicit question to the user, even
+when confident which answer fits — never infer the answer from the
+plugin's apparent complexity and proceed without asking: mechanical
+intake (name + goal + outcome, fast) or the full BMAD shelf
+(brainstorming → brief → PRD → UX spec, the same procedure
+`full-stack-app`/`pwa-app` run, archived to `.hedgehog/BMAD/`)? A trivial
+single-tool plugin usually wants mechanical; a plugin with real ambiguity
+in its hook, UI, or protocol-driver shape can genuinely benefit from
+BMAD's elicitation — that's context for how to phrase the question and
+state a recommendation ("this sounds trivial enough for mechanical
+intake — sound right, or do you want the full BMAD pass?"), not a license
+to skip asking it. The choice is the user's, not fixed by this core; wait
+for their answer before starting either path.
 
 **Mechanical path:**
 
