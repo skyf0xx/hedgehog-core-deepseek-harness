@@ -1,0 +1,61 @@
+name: Dependency update
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    if: github.repository == 'skyf0xx/hedgehog-core-deepseek-harness'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: corepack enable
+
+      - run: cd workspace && pnpm install --no-frozen-lockfile -r --lockfile-only -u
+
+      - id: diff
+        run: |
+          if git diff --quiet -- workspace/package.json workspace/pnpm-lock.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.diff.outputs.changed == 'true'
+        run: cd workspace && pnpm install --frozen-lockfile
+
+      - if: steps.diff.outputs.changed == 'true'
+        run: cd workspace && pnpm run generate:tool dependency-update-smoke
+
+      - if: steps.diff.outputs.changed == 'true'
+        run: cd workspace && node tools/generators/verify-scaffold.mjs dependency-update-smoke
+
+      - if: steps.diff.outputs.changed == 'true'
+        run: rm -rf workspace/plugins/dependency-update-smoke workspace/.hedgehog/dsh-smoke/dependency-update-smoke.md
+
+      - if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore(workspace): update dependencies"
+          title: "chore(workspace): update dependencies"
+          body: |
+            Automated dependency update against `workspace/`, gated on:
+
+            - scaffolding a throwaway plugin via `generate:tool`
+            - `verify-scaffold.mjs` against that plugin
+
+            Review the diff before merging. Merging does not publish; bump `package.json` separately to release.
+          branch: dependency-update/scheduled
+          delete-branch: true
+          add-paths: workspace
