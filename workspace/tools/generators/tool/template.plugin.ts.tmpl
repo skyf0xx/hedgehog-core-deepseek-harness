@@ -1,0 +1,19 @@
+import type { Context } from '@deepseek-ai/cordis';
+import { defineTool } from '@deepseek-ai/dsh-tools';
+
+export const name = '{{name}}';
+
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: '{{name}}',
+    description: 'TODO: describe what this tool does.',
+    parameters: {},
+    output: {
+      schema: { type: 'string' },
+      render: (_args, value) => [{ type: 'text', text: value }],
+    },
+    async execute() {
+      throw new Error('not implemented');
+    },
+  }));
+}
