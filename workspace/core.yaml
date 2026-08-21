@@ -18,19 +18,19 @@ layers:
   - id: wiring
     depends_on: logic
     scope: ["plugins/{module}/cordis.patch.yml", "plugins/{module}/package.json"]
-    verify: "pnpm dsh --profile hh-scratch-{module} --dump-config"
+    verify: "pnpm dsh --profile headless --patch plugins/{module}/cordis.patch.yml --dump-config"
     commit: "feat({module}): wiring"
 
   - id: smoke
     depends_on: wiring
     scope: [".hedgehog/dsh-smoke/{module}.md"]
-    verify: "pnpm dsh --profile hh-scratch-{module} --patch plugins/{module}/cordis.yml headless \"$(cat .hedgehog/dsh-smoke/{module}.md)\""
+    verify: "pnpm dsh --profile headless --patch plugins/{module}/cordis.patch.yml \"$(cat .hedgehog/dsh-smoke/{module}.md)\""
     commit: "test({module}): smoke"
 
   - id: bundle
     depends_on: smoke
     scope: ["plugins/{module}/package.json", "plugins/{module}/lib/**"]
-    verify: "pnpm --filter {module} pack --dry-run"
+    verify: "pnpm --filter {module} pack --pack-destination \"$(mktemp -d)\""
     commit: "feat({module}): bundle"
 
   - id: join

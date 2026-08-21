@@ -38,8 +38,7 @@ the user wants to build, named directly.
 
 1. **Confirm the plugin's name and goal with the user** — the plugin
    name becomes `{module}` everywhere in the compiled graph (directory
-   name under `plugins/`, profile name `hh-scratch-{module}`, commit
-   scopes), so confirm it matches the generator's naming rule (lowercase,
+   name under `plugins/`, commit scopes), so confirm it matches the generator's naming rule (lowercase,
    starts with a letter, letters/digits/hyphens only) before adding the
    intent. State the goal (what the plugin does) and outcome (what
    "done" looks like — usually: boots under DSH, completes the smoke
@@ -158,10 +157,11 @@ step to work around by hand-writing the scaffold files.
    same `claim` call reaps for having just expired is exempt too: that
    call still claims whatever else is ready, and the reaped task lands in
    NEEDS ATTENTION for the next `claim` call to stop on.
-7. **After `smoke` verifies clean** for a plugin (the `headless` run
-   against `hh-scratch-{module}` exits 0, proving the plugin boots and
-   completes one real task, no human required) — see Visibility step
-   below before moving on to `bundle`.
+7. **After `smoke` verifies clean** for a plugin (`dsh --profile headless
+   --patch plugins/{module}/cordis.patch.yml "<task>"` exits 0, proving
+   the plugin boots under DSH's builtin `headless` profile and completes
+   one real task, no human required) — see Visibility step below before
+   moving on to `bundle`.
 8. **Repeat** — `hedgehog claim --owner <owner> --count <n>` again for
    whatever layers are ready next, across every plugin in flight.
 
