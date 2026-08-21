@@ -56,6 +56,11 @@ Everything under this package's `workspace/`, copied to the repo root:
   `dsh-credentials-local` provider reads from a project-root `.env`.
   Copy to `.env` and fill in before any layer past `wiring` runs; `.env`
   itself is gitignored, never committed.
+- `README.md` — a thin index: what the workspace is, plus a `## Plugins`
+  section. `pnpm generate:tool <name>` appends one bullet here per new
+  plugin, right after the `<!-- plugin-readme-links -->` marker, linking
+  to that plugin's own generated README — this file is never hand-edited
+  beyond that.
 
 `node_modules` is not part of the copy — `pnpm install` regenerates it
 from the committed `pnpm-lock.yaml`.

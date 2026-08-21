@@ -53,6 +53,19 @@ export async function generateTool(rawName) {
   await writeGenerated(join(pluginDir, 'src', 'index.ts'), fillTemplate(pluginTsTmpl, vars));
   await writeGenerated(join(pluginDir, 'README.md'), fillTemplate(readmeTmpl, vars));
 
+  // Root README.md is a fixed index, not per-plugin narrative content —
+  // each new plugin appends one bullet after the marker, pointing at the
+  // README this generator just wrote, so a workspace with several
+  // plugins still has one place that lists them all.
+  const rootReadmePath = join(WORKSPACE_ROOT, 'README.md');
+  const rootReadme = await readFile(rootReadmePath, 'utf8');
+  const marker = '<!-- plugin-readme-links -->';
+  const bullet = `- [\`${name}\`](plugins/${name}/README.md)`;
+  if (!rootReadme.includes(bullet)) {
+    await writeFile(rootReadmePath, rootReadme.replace(marker, `${marker}\n${bullet}`), 'utf8');
+    console.log(`  updated README.md`);
+  }
+
   await writeGenerated(
     join(pluginDir, 'tsconfig.json'),
     JSON.stringify(
