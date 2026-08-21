@@ -42,8 +42,22 @@ in its hook, UI, or protocol-driver shape can genuinely benefit from
 BMAD's elicitation — that's context for how to phrase the question and
 state a recommendation ("this sounds trivial enough for mechanical
 intake — sound right, or do you want the full BMAD pass?"), not a license
-to skip asking it. The choice is the user's, not fixed by this core; wait
-for their answer before starting either path.
+to skip asking it. The choice is the user's, not fixed by this core.
+
+Ask it as its own distinct, dedicated prompt — a yes/no or
+multiple-choice tool call, not folded into the same turn as any other
+question (e.g. confirming the plugin's name, the mechanical path's next
+step). End the turn there and wait for the user's actual answer before
+starting either path; do not proceed to any step of either path in the
+same response that states the question.
+
+**Anti-pattern:** stating a recommendation and continuing in the same
+turn — "Let's do mechanical intake since this is trivial — now, what
+should we call the plugin?" — does not satisfy "surfacing it as an
+explicit question," even though it names both options and states a
+recommendation. Mentioning the choice is not the same as asking it: the
+turn must end on the question alone, with intake work starting only
+after the user replies.
 
 **Mechanical path:**
 
