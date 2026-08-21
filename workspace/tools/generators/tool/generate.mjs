@@ -42,10 +42,12 @@ export async function generateTool(rawName) {
   const packageJsonTmpl = await readFile(join(HERE, 'template.package.json.tmpl'), 'utf8');
   const patchRowTmpl = await readFile(join(HERE, 'template.patch-row.yml.tmpl'), 'utf8');
   const pluginTsTmpl = await readFile(join(HERE, 'template.plugin.ts.tmpl'), 'utf8');
+  const readmeTmpl = await readFile(join(HERE, 'template.README.md.tmpl'), 'utf8');
 
   await writeGenerated(join(pluginDir, 'package.json'), fillTemplate(packageJsonTmpl, vars));
   await writeGenerated(join(pluginDir, 'cordis.patch.yml'), fillTemplate(patchRowTmpl, vars));
   await writeGenerated(join(pluginDir, 'src', 'index.ts'), fillTemplate(pluginTsTmpl, vars));
+  await writeGenerated(join(pluginDir, 'README.md'), fillTemplate(readmeTmpl, vars));
 
   await writeGenerated(
     join(pluginDir, 'tsconfig.json'),

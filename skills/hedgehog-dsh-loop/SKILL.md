@@ -31,10 +31,15 @@ is the cross-plugin integration check the per-plugin layers can't be.
 ## Planning intake (Phase 0, before any build layer)
 
 Run once per new plugin, before that plugin's `scaffold` task can be
-claimed. Unlike `landing-page`'s planning intake, this core does not run
-the vendored BMAD-METHOD shelf — there is no subject/audience/job to
-mine, no brief to lock. Intake here is mechanical: one intent per plugin
-the user wants to build, named directly.
+claimed. Ask the user directly, before anything else: mechanical intake
+(name + goal + outcome, fast) or the full BMAD shelf (brainstorming →
+brief → PRD → UX spec, the same procedure `full-stack-app`/`pwa-app` run,
+archived to `.hedgehog/BMAD/`)? A trivial single-tool plugin usually
+wants mechanical; a plugin with real ambiguity in its hook, UI, or
+protocol-driver shape can genuinely benefit from BMAD's elicitation —
+the choice is the user's, not fixed by this core.
+
+**Mechanical path:**
 
 1. **Confirm the plugin's name and goal with the user** — the plugin
    name becomes `{module}` everywhere in the compiled graph (directory
@@ -60,6 +65,30 @@ the user wants to build, named directly.
 4. **Hand off to `bootstrap`** (first plugin) or straight into The Loop
    (an additional plugin in an already-bootstrapped project) once the
    commit lands.
+
+**BMAD path:**
+
+1. **Run `hedgehog-planning-intake`'s Phase 0 in full**, the same shared
+   shelf `full-stack-app`/`pwa-app` run: state the BMAD attribution, then
+   `bmad-forge-idea` → `bmad-brainstorming` → `bmad-product-brief` →
+   `bmad-prfaq` → `bmad-prd` → `bmad-ux` → `bmad-deep-recon`, archived to
+   `.hedgehog/BMAD/` with that skill's fixed layout. This plugin's own
+   name, goal, and shape (tool, hook, UI, or protocol-driver — see
+   `dsh-plugin-shapes/SKILL.md`) should fall out of the PRD and UX spec by
+   the end of this pass.
+2. **Mine `.hedgehog/BMAD/04-prd.md` into one intent**: the plugin name
+   (matching the generator's naming rule, same constraint as the
+   mechanical path's step 1), goal, and outcome, drawn from the PRD's
+   Features/FRs rather than typed fresh — this core still has one intent
+   per plugin, so mining collapses the PRD to that single call rather
+   than one intent per Feature the way `full-stack-app` does. Confirm the
+   mined name/goal/outcome with the user before writing anything, the
+   same go-ahead the mechanical path's step 1 gets.
+3. **Add the intent and continue exactly as the mechanical path's steps
+   2–4**: `hedgehog intent add`, `hedgehog plan`, `hedgehog status`, the
+   `chore(planning): intake` commit (this path's commit also includes
+   `.hedgehog/BMAD/`, archival and immutable from here), then hand off to
+   `bootstrap` or The Loop.
 
 `planner` owns this section; see that agent for when it runs, including
 its Re-entry pass for adding a new plugin to an already-built project
@@ -157,10 +186,11 @@ step to work around by hand-writing the scaffold files.
    same `claim` call reaps for having just expired is exempt too: that
    call still claims whatever else is ready, and the reaped task lands in
    NEEDS ATTENTION for the next `claim` call to stop on.
-7. **After `smoke` verifies clean** for a plugin (`dsh --profile headless
-   --patch plugins/{module}/cordis.patch.yml "<task>"` exits 0, proving
-   the plugin boots under DSH's builtin `headless` profile and completes
-   one real task, no human required) — see Visibility step below before
+7. **After `smoke` verifies clean** for a plugin
+   (`NODE_OPTIONS=--experimental-strip-types dsh --profile headless
+   --patch plugins/{module}/cordis.yml "<task>"` exits 0, proving the
+   plugin boots under DSH's builtin `headless` profile and completes one
+   real task, no human required) — see Visibility step below before
    moving on to `bundle`.
 8. **Repeat** — `hedgehog claim --owner <owner> --count <n>` again for
    whatever layers are ready next, across every plugin in flight.
@@ -210,7 +240,18 @@ loop. For this core specifically:
 - **A correction ripples forward through one plugin's own chain.** A
   wrong `logic` layer for a given plugin ripples through that same
   plugin's `wiring`, `smoke`, and `bundle` — each its own small commit,
-  in order, `hedgehog retry` → claim → fix → verify at each step.
+  in order, claim → fix → verify at each step. The layer being corrected
+  is usually already `complete` by the time the problem surfaces (that's
+  the normal way a Correction Protocol pass gets triggered — a later
+  layer breaks and traces back to an earlier one that already verified
+  clean), so the reopening step is `hedgehog reopen <task-id> --confirm`,
+  not `hedgehog retry` — `retry` only returns an already-`blocked` task to
+  `planned`; it does nothing for a `complete` one. `reopen` also reopens
+  every already-`complete` layer downstream of it in the same plugin's
+  chain, in one call, so `wiring`/`smoke`/`bundle` don't need reopening
+  individually. If a fix instead lands as a hand-authored commit outside
+  `hedgehog verify` (rare — prefer `reopen` first), `hedgehog db rebuild`
+  reconciles the graph state against what's actually committed afterward.
 - **A correction to one plugin does not ripple to other plugins.**
   Because layers are module-axis (independent per `{module}`), patching
   plugin A's `logic` layer has no effect on plugin B's tasks — don't
@@ -337,14 +378,23 @@ opens with: where the build is, what's next and why, and what's blocked.
 
 Tell the user plainly that the build is complete and that clearing
 context now costs nothing — the build graph, the friction log, and the
-commit log hold everything a fresh session needs. Name **both** ways
-forward:
+commit log hold everything a fresh session needs. Before naming the two
+ways forward, **offer to launch the built plugin(s) live**:
+`pnpm dsh web --patch plugins/<plugin-name>/cordis.yml` for each plugin
+in the build, opening `127.0.0.1:3080` with it loaded, so the user can
+see and use what was just built before deciding whether to tweak it or
+add more scope — the same offer the Visibility step makes per-plugin
+after `smoke`, re-surfaced here at whole-build completion.
+
+Then name **both** ways forward:
 
 - **Adjustments to what's built** — a `tweaker` session, in a *new* chat
   window, not a subagent call inside this one. Tell the user plainly:
   close this chat window and open a new one, then paste this to start
   it:
 
+  > (Paste this in a **new** chat window/session — not this one:)
+  >
   > The build is complete — `harness-eng` built every plugin's six
   > layers through `join`. Use the tweaker agent: first review the
   > friction log and ask me for feedback on the build, then take my

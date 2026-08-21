@@ -65,16 +65,30 @@ A bundle manifest is a `package.json` with a `"dsh": { "bundle": { "patch":
 `cordis.patch.yml` as a YAML array (`- insert:\n    - id: <name>\n
 name: <name>`).
 
-Real scriptable dev loop, for your own sanity-checking:
+Real scriptable dev loop, for your own sanity-checking. `<path>` is
+always the plugin's own dev-patch overlay,
+`plugins/<name>/cordis.yml` — the generator's separate `cordis.yml`
+(absolute filesystem path to `src/index.ts`), not the bundle/publish
+`cordis.patch.yml` (bare specifier, resolved via node_modules — invisible
+for a plugin that was never published). Every invocation needs
+`NODE_OPTIONS=--experimental-strip-types` ahead of it: `dsh`'s own bin is
+plain Node with no TypeScript loader registered, and the dev-patch
+overlay points straight at raw `.ts` source.
 
-- `pnpm dsh --profile <name> --dump-config` inspects the composed plugin
-  tree without booting — this is what the `wiring` layer's verify runs.
-- `pnpm dsh --profile <name> --patch <path> headless "<task>"` runs one
-  job and exits — this is what the `smoke` layer's verify runs, the one
-  real boot-and-run integration check in the whole sequence.
-- `pnpm dsh web --patch <path>` boots the Web UI at 127.0.0.1:3080 with
-  the plugin loaded live. This is manual and advisory only — never wire
-  it into a `verify` command, and never let it block a layer.
+- `NODE_OPTIONS=--experimental-strip-types pnpm dsh --profile <name>
+  --patch plugins/<name>/cordis.yml --dump-config` inspects the composed
+  plugin tree, with this plugin's own patch applied, without booting —
+  this is what the `wiring` layer's verify runs.
+- `NODE_OPTIONS=--experimental-strip-types pnpm dsh --profile <name>
+  --patch plugins/<name>/cordis.yml headless "<task>"` runs one job and
+  exits — this is what the `smoke` layer's verify runs, the one real
+  boot-and-run integration check in the whole sequence. `<name>` is the
+  builtin `headless` profile DSH ships — no separate profile setup step
+  needed.
+- `pnpm dsh web --patch plugins/<name>/cordis.yml` boots the Web UI at
+  127.0.0.1:3080 with the plugin loaded live. This is manual and
+  advisory only — never wire it into a `verify` command, and never let
+  it block a layer.
 
 **Pin, exactly:** `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` are
 pinned to `0.1.0-rc.8`. `@deepseek-ai/cordis` is versioned

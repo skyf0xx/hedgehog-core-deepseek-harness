@@ -1,0 +1,29 @@
+# {{name}}
+
+TODO: describe what this plugin does.
+
+## Install
+
+**Local, unpublished (dev):** patch this plugin into a DSH profile
+directly from its source:
+
+```bash
+pnpm dsh --profile <profile-name> --patch plugins/{{name}}/cordis.yml --dump-config
+```
+
+**Published:** once `{{name}}` is published, add it to a profile the
+normal way:
+
+```bash
+dsh plugin --profile <profile-name> add {{name}}
+```
+
+## Try it out
+
+Launch the DSH Web UI with `{{name}}` loaded live:
+
+```bash
+pnpm dsh web --patch plugins/{{name}}/cordis.yml
+```
+
+Opens `127.0.0.1:3080` with the plugin loaded and callable.
