@@ -66,9 +66,19 @@ from the committed `pnpm-lock.yaml`.
 
 Check for `core.yaml` at the repo root, or a prior `chore: workspace`
 commit (`git log --grep="^chore: workspace"`). Either means core already
-landed — stop, don't re-copy. If something about the landed core seems
-wrong, that's a Correction Protocol case (`hedgehog-dsh-loop`), not a
-re-copy: patch the specific file at its source.
+landed — stop, don't re-copy. On a project installed via `hedgehog init
+--deepseek-harness`, `workspace/` was already copied to the repo root
+before any git history existed, so its contents land inside the
+project's very first commit (`chore: install Hedgehog`) rather than a
+later `chore: workspace` commit of their own — `core.yaml`'s presence is
+the only signal step 6 will ever produce on that path. On a project that
+ran plain `init` and only reached this core because `planner` picked it
+at Phase 0, `workspace/` is copied later, mid-history, and does get its
+own `chore: workspace` commit (step 7). Either signal alone is
+sufficient to stop here; don't expect both. If something about the
+landed core seems wrong, that's a Correction Protocol case
+(`hedgehog-dsh-loop`), not a re-copy: patch the specific file at its
+source.
 
 ### 2. Land this package's `workspace/`
 
@@ -143,9 +153,15 @@ config itself is broken.
 chore: workspace
 ```
 
-One commit for all of core, landed as a verified copy. That commit
-existing is the record that core landed — `bootstrap` checks for it via
-the commit log, not a checklist line.
+One commit for all of core, landed as a verified copy — on a project
+that ran plain `init` and reached this core via `planner`'s Phase 0
+pick. On a `--deepseek-harness`-flagged install, `workspace/`'s content
+already sits inside `chore: install Hedgehog` (see step 1), so there is
+nothing left to commit here: `git status` is clean, and this step is a
+no-op by design rather than a skipped one. Either way, by the end of
+this step `core.yaml`'s presence at the repo root is the durable record
+that core landed — `bootstrap` checks for it via step 1, not a
+`chore: workspace` commit that only exists on one of the two paths.
 
 ## If verification fails
 

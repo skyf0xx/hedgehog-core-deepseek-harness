@@ -5,7 +5,7 @@
 id: deepseek-harness
 layers:
   - id: scaffold
-    scope: ["plugins/{module}/**"]
+    scope: ["plugins/{module}/**", ".hedgehog/dsh-smoke/{module}.md"]
     verify: "node tools/generators/verify-scaffold.mjs {module}"
     commit: "feat({module}): scaffold"
 
@@ -18,13 +18,13 @@ layers:
   - id: wiring
     depends_on: logic
     scope: ["plugins/{module}/cordis.patch.yml", "plugins/{module}/package.json"]
-    verify: "pnpm dsh --profile headless --patch plugins/{module}/cordis.patch.yml --dump-config"
+    verify: "NODE_OPTIONS=--experimental-strip-types pnpm dsh --profile headless --patch plugins/{module}/cordis.yml --dump-config"
     commit: "feat({module}): wiring"
 
   - id: smoke
     depends_on: wiring
     scope: [".hedgehog/dsh-smoke/{module}.md"]
-    verify: "pnpm dsh --profile headless --patch plugins/{module}/cordis.patch.yml \"$(cat .hedgehog/dsh-smoke/{module}.md)\""
+    verify: "NODE_OPTIONS=--experimental-strip-types pnpm dsh --profile headless --patch plugins/{module}/cordis.yml \"$(cat .hedgehog/dsh-smoke/{module}.md)\""
     commit: "test({module}): smoke"
 
   - id: bundle

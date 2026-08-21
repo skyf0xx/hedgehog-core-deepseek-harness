@@ -1,0 +1,9 @@
+node_modules/
+plugins/*/lib/
+.env
+.hedgehog/hedgehog.db
+.hedgehog/hedgehog.db-*
+.hedgehog/graph-server.json
+.hedgehog/commit.lock
+.DS_Store
+*.log
