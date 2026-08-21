@@ -3,6 +3,7 @@
 # plugin per project just never has a second intent; nothing forces or
 # blocks multi-plugin.
 id: deepseek-harness
+pluralizes: false
 layers:
   - id: scaffold
     scope: ["plugins/{module}/**", ".hedgehog/dsh-smoke/{module}.md"]
@@ -30,7 +31,7 @@ layers:
   - id: bundle
     depends_on: smoke
     scope: ["plugins/{module}/package.json", "plugins/{module}/lib/**"]
-    verify: "pnpm --filter {module} pack --pack-destination \"$(mktemp -d)\""
+    verify: "pnpm --filter {module} build && pnpm --filter {module} pack --pack-destination \"$(mktemp -d)\""
     commit: "feat({module}): bundle"
 
   - id: join

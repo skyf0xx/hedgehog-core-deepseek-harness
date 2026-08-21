@@ -13,5 +13,11 @@
     "@deepseek-ai/dsh": "0.1.0-rc.8",
     "@deepseek-ai/cordis": "4.0.1",
     "@deepseek-ai/dsh-tools": "0.1.0-rc.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.8",
+      "react-dom": "19.2.8"
+    }
   }
 }

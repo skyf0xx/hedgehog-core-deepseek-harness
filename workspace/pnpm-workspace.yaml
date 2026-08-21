@@ -1,1 +1,8 @@
 packages: ["plugins/*"]
+
+onlyBuiltDependencies:
+  - "@deepseek-ai/dsh-subprocess-local"
+  - "@google/genai"
+  - koffi
+  - node-pty
+  - protobufjs
