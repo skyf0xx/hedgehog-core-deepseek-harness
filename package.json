@@ -1,6 +1,6 @@
 {
   "name": "@skyf0xx/hedgehog-core-deepseek-harness",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Hedgehog's deepseek-harness core: a pinned DSH/Cordis plugin workspace, a tool-plugin generator, and the skills that drive building DeepSeek Harness plugins with Hedgehog's build discipline.",
   "type": "module",
   "scripts": {
