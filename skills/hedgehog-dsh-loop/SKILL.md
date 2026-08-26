@@ -253,9 +253,11 @@ loop skill uses for turning real build friction into upstream fixes.
 ## Correction Protocol
 
 The same core mechanic every Hedgehog core's loop skill implements:
-stop, patch the upstream layer in place, fast-forward every dependent
-layer as its own commit, commit messages as the explanation, resume the
-loop. For this core specifically:
+stop, patch the upstream layer in place (checking the LSP tool's
+findReferences/incomingCalls against the symbol first, so a fix to one
+plugin's shared type doesn't miss a caller in another), fast-forward
+every dependent layer as its own commit, commit messages as the
+explanation, resume the loop. For this core specifically:
 
 - **A correction ripples forward through one plugin's own chain.** A
   wrong `logic` layer for a given plugin ripples through that same
