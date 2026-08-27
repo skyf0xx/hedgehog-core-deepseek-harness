@@ -170,7 +170,10 @@ step to work around by hand-writing the scaffold files.
    typecheck break the per-plugin layers couldn't see in isolation.
    Multiple claimed packets for different plugins can be worked in
    whatever order is convenient — they're independent unless a Correction
-   Protocol patch links them (see below).
+   Protocol patch links them (see below). If a dispatch by name reports
+   `harness-eng` as not found — expected right after `init`/`update`
+   installed it this same session — see root CLAUDE.md's "Delegating on
+   this host" note rather than treating it as fatal.
 4. **`harness-eng` runs its own self-test** for the layer before
    presenting its work — necessary, not sufficient. This is a sanity
    check the agent does for itself; it does not move the task and does
