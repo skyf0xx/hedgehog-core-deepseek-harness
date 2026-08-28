@@ -3,6 +3,7 @@
 # plugin per project just never has a second intent; nothing forces or
 # blocks multi-plugin.
 id: deepseek-harness
+pattern: vertical-slice
 pluralizes: false
 layers:
   - id: scaffold
