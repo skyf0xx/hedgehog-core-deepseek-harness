@@ -15,7 +15,7 @@ truth, defines the six compiled layers and this core's module axis:
 `{module}` is a plugin name, and a project builds one intent per plugin
 it wants to add to the workspace. This is the same module-axis mechanism
 `full-stack-app` uses per domain module — not the linear, single-module
-degenerate case `landing-page`'s loop implements. Because layers vary
+degenerate case `landing-page`'s loop implements — which is why `workspace/core.yaml` declares `pattern: vertical-slice`. Because layers vary
 independently per plugin, a single `hedgehog claim` call can return
 **multiple** ready tasks at once (e.g. `logic` for one plugin and
 `scaffold` for another, claimed together) — never assume `--count N`
