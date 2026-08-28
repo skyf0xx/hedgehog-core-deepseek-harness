@@ -167,7 +167,12 @@ step to work around by hand-writing the scaffold files.
    then relies on the layer's own `verify` command to prove it end to
    end; `bundle` confirms the package is pack-ready; `join` (once, after
    every plugin's `bundle` is complete) resolves any cross-plugin
-   typecheck break the per-plugin layers couldn't see in isolation.
+   typecheck break the per-plugin layers couldn't see in isolation. Every
+   layer before `join` has its verify radius equal to its own scope —
+   internally-consistent-only; `join`'s `exclusive: true` is what marks it
+   as the layer where the real test bar and the `reviewer` pass belong
+   (`hedgehog-authored-loop`'s "Test depth follows verify radius" states
+   the full rule, shared across cores).
    Multiple claimed packets for different plugins can be worked in
    whatever order is convenient — they're independent unless a Correction
    Protocol patch links them (see below). If a dispatch by name reports
