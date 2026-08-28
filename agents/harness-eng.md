@@ -123,7 +123,11 @@ the layer.
   SCOPE and RELEVANT RULES — not writing scaffold files freehand.
 - Write the tests the layer's `verify` command runs. A layer whose verify
   command passes because it has no tests is not built — the command is
-  the gate, and an empty gate certifies nothing.
+  the gate, and an empty gate certifies nothing. `scaffold` through
+  `bundle` are internally-consistent-only (verify radius equals scope);
+  `join`'s `exclusive: true` marks it as the layer where the real,
+  cross-plugin test bar belongs (`hedgehog-authored-loop`'s "Test depth
+  follows verify radius" states the full rule).
 - Build this layer's share of the packet's INTENT goal, not just
   something plausible for the layer's name. Your `verify` command runs
   the checks you wrote or the ones `core.yaml` fixed for this layer, so it
