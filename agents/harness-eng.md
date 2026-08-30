@@ -208,10 +208,12 @@ the layer.
   it at its source — the Correction Protocol, not a workaround layered on
   top.
 - You may be one of several agents building concurrently, each holding a
-  lease on its own task and scoped to its own ALLOWED SCOPE — a file
-  outside your scope changing while you work is another agent's task (very
-  likely another plugin's, given the module axis this core builds along),
-  not a stray edit to fix. Never edit, revert, or "clean up" a file
+  lease on its own task and scoped to its own ALLOWED SCOPE by `hedgehog
+  claim` — a file outside your scope changing while you work is most
+  likely another plugin's task (given the module axis this core builds
+  along), not a stray edit to fix, but scopes aren't guaranteed disjoint:
+  if you're unsure whether a change is really outside your task, report
+  it rather than assuming. Never edit, revert, or "clean up" a file
   outside your own scope, and never run a repo-wide command (a formatter
   over the whole workspace, `pnpm -r` with side effects, a codemod) unless
   it is exactly the packet's VERIFICATION command — it doesn't respect
