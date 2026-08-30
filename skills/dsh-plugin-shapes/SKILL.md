@@ -8,10 +8,20 @@ description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript
 `harness-eng` decides *which* shape a given plugin intent needs — that
 judgment call belongs to the task, not to this skill. This skill covers
 *how* to write each shape once chosen: the plugin's own TypeScript body,
-catalogued against DSH's real, current docs. It doesn't cover the
-bundle/manifest wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`)
-that every shape shares regardless of which one it implements — that's
-the tool-plugin generator's concern, not this skill's.
+catalogued against DSH's docs. It doesn't cover the bundle/manifest
+wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
+shape shares regardless of which one it implements — that's the
+tool-plugin generator's concern, not this skill's.
+
+**Verified against DSH tag `dsh-v0.1.0-rc.8`** (`docs/user/develop/framework/events.md`
+and `service.md` at that tag), the same tag `workspace/package.json` pins
+`@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to. This is the one owning
+statement of which DSH revision this skill's catalog was checked against —
+every confirmed-event, confirmed-signature, and "doesn't exist" claim
+below is only guaranteed true as of that tag. A re-pin to a newer `rc` or
+stable tag needs this skill's claims re-checked against the new tag's own
+docs before the pin line above is updated to match; don't bump the pin in
+`workspace/package.json` without also re-verifying this file.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -127,7 +137,7 @@ exposing a new callable. Registers on a Cordis event or a durable
 session-event type via `ctx.on`, inside function-form `apply`.
 
 **Confirmed Cordis-level events** (per `docs/user/develop/framework/events.md`
-on DSH's `master` branch): `agent/step`, `agent/request`,
+at the tag pinned above): `agent/step`, `agent/request`,
 `agent/request-error`, `tools/result`, `session/event`.
 
 **Confirmed durable session-event types** (delivered through the
@@ -197,7 +207,7 @@ confirmed event or a different shape instead.
 A plugin that drives interactive input or contributes to the built-in Web
 Client, rather than registering a tool or a passive hook. Per DSH's own
 docs, this shape is real but less stable than the tool shape — the docs
-fetched for this skill describe it only at the level below, with no full
+at the tag pinned above describe it only at the level below, with no full
 worked example:
 
 - Registers on `session/event` the same way a hook plugin does (see
@@ -205,11 +215,11 @@ worked example:
   step, tool-call, and compaction activity as it streams.
 - Drives input via `agent.followup()` / `agent.steer()` — named in DSH's
   docs as the mechanism a UI plugin uses to inject or redirect input, but
-  no full signature or code example for either call was present in the
-  fetched content.
+  no full signature or code example for either call was present at that
+  tag.
 - Can contribute a `ConversationNodeDefinition` to the built-in Web
   Client — named as a real extension point, but again with no worked
-  example in what was fetched.
+  example at that tag.
 
 **Honesty note:** treat `agent.followup()`, `agent.steer()`, and
 `ConversationNodeDefinition` as confirmed to exist by name, but not
@@ -275,7 +285,7 @@ Dependency handling:
 **Honesty note (correcting an assumption, not the docs):** this shape is
 sometimes described as going through a `ctx.provide()` call. That call
 does not appear anywhere in DSH's `docs/user/develop/framework/service.md`
-as fetched for this skill — the only provisioning mechanism documented
+at the tag pinned above — the only provisioning mechanism documented
 there is extending `Service` and calling `super(ctx, name)`, as shown
 above. Don't write `ctx.provide(...)` into a plugin on the assumption
 it's the real API; use the `Service` subclass form, and if a future task
