@@ -242,9 +242,9 @@ working by a command's exit code.
 
 ## Friction log
 
-DSH is pre-1.0, days old as a project, and its own docs warn of breaking
-changes between `rc` tags. Given that cadence, this is one of the most
-frequently invoked instructions in this file, not a footnote: **call
+Given DSH's pace of change (root `CLAUDE.md`'s constants section), this is
+one of the most frequently invoked instructions in this file, not a
+footnote: **call
 `hedgehog friction add "<note>" [--task <task-id>]` on any DSH breaking
 change, undocumented CLI or manifest behavior, or a manifest shape that
 shifted from what an earlier layer assumed** — a `--dump-config` flag

@@ -39,10 +39,11 @@ Everything under this package's `workspace/`, copied to the repo root:
   `smoke`, `bundle`, `join`) every plugin intent runs through, one intent
   per plugin.
 - `package.json` — pinned dependencies: `@deepseek-ai/dsh` and
-  `@deepseek-ai/dsh-tools` at `0.1.0-rc.8`, `@deepseek-ai/cordis` at
-  `4.0.1`. Cordis is versioned independently of DSH's `rc` cadence — the
-  three packages do not share one tag, and the pin reflects that; don't
-  "simplify" them onto a single version during a later bump.
+  `@deepseek-ai/dsh-tools` share one pin, `@deepseek-ai/cordis` is pinned
+  independently of DSH's `rc` cadence — the three packages do not share
+  one tag, and the pin reflects that; don't "simplify" them onto a single
+  version during a later bump. See `workspace/package.json` for the exact
+  pinned versions currently in effect.
 - `pnpm-workspace.yaml` — `packages: ["plugins/*"]`.
 - `plugins/` — empty except for a `.gitkeep`. The first plugin lands
   later, generated (not hand-written) by `pnpm generate:tool <name>`.

@@ -90,15 +90,16 @@ overlay points straight at raw `.ts` source.
   advisory only — never wire it into a `verify` command, and never let
   it block a layer.
 
-**Pin, exactly:** `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` are
-pinned to `0.1.0-rc.8`. `@deepseek-ai/cordis` is versioned
-**independently** — already stable at `4.0.1`, not on DSH's rc cadence.
-Do not assume the three share one version just because two of them do.
+**Pin, exactly:** `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` share one
+pin; `@deepseek-ai/cordis` is versioned **independently**, not on DSH's rc
+cadence — do not assume the three share one version just because two of
+them do. See `workspace/package.json` for the exact pinned versions
+currently in effect.
 
 ## Report friction aggressively
 
-DSH is pre-1.0 and explicitly warns of breaking changes between rc tags.
-Call `hedgehog friction add "<note>" [--task <task-id>]` prominently and
+Given DSH's pace of change (see root `CLAUDE.md`'s constants section),
+call `hedgehog friction add "<note>" [--task <task-id>]` prominently and
 often — every time you hit a breaking rc change, undocumented CLI
 behavior, an `apply(ctx)` signature that doesn't match the skill's
 catalog, or a manifest shape that's shifted from what's documented. This
