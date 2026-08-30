@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.0-rc.8`** (`docs/user/develop/framework/events.md`
+**Verified against DSH tag `dsh-v0.1.2-alpha.2`** (`docs/user/develop/framework/events.md`
 and `service.md` at that tag), the same tag `workspace/package.json` pins
 `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to. This is the one owning
 statement of which DSH revision this skill's catalog was checked against —
@@ -137,7 +137,7 @@ exposing a new callable. Registers on a Cordis event or a durable
 session-event type via `ctx.on`, inside function-form `apply`.
 
 **Confirmed Cordis-level events** (per `docs/user/develop/framework/events.md`
-at the tag pinned above): `agent/step`, `agent/request`,
+at the tag pinned above): `agent/pre-step`, `agent/request`,
 `agent/request-error`, `tools/result`, `session/event`.
 
 **Confirmed durable session-event types** (delivered through the
