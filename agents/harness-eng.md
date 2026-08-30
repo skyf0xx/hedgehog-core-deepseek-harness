@@ -109,6 +109,15 @@ with this core. Don't wait until a task is blocked to file one — file the
 moment you notice something off, even if you work around it and finish
 the layer.
 
+A `logic`-layer `tsc --noEmit` failure at a DSH API call site (a method
+that no longer exists, a changed parameter shape) can mean the plugin's
+own code is wrong, or it can mean the pinned DSH's real API has moved
+past what `skills/dsh-plugin-shapes/SKILL.md` still catalogs for the
+pinned tag. Don't assume it's always the former — if the failing call
+site matches what the skill documents exactly, that's the second case:
+file friction rather than silently reworking the call to whatever
+compiles.
+
 ## Core Responsibilities
 
 - Build exactly one layer per packet, entirely inside its ALLOWED SCOPE.
