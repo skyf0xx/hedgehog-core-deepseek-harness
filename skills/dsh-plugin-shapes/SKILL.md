@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.2-alpha.2`** (`docs/user/develop/framework/events.md`
+**Verified against DSH tag `dsh-v0.1.2-alpha.3`** (`docs/user/develop/framework/events.md`
 and `service.md` at that tag), the same tag `workspace/package.json` pins
 `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to. This is the one owning
 statement of which DSH revision this skill's catalog was checked against —
