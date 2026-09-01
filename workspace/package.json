@@ -10,9 +10,9 @@
     "generate:tool": "node tools/generators/cli.mjs tool"
   },
   "dependencies": {
-    "@deepseek-ai/dsh": "0.1.2-alpha.3",
+    "@deepseek-ai/dsh": "0.1.2-alpha.4",
     "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-tools": "0.1.2-alpha.3"
+    "@deepseek-ai/dsh-tools": "0.1.2-alpha.4"
   },
   "pnpm": {
     "overrides": {
