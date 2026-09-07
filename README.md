@@ -1,6 +1,6 @@
 # Hedgehog DSH Core ⭐
 
-### For: DeepSeek DSH Plugins That are Built to Last
+### For: Building DeepSeek DSH Plugins That are Built to Last
 
 DSH moves fast, and its pre-1.0 APIs shift underneath you. Next week's
 release can break a plugin you built freehand today.
