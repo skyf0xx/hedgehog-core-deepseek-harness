@@ -44,9 +44,6 @@ Ask your agent:
 npx @skyf0xx/hedgehog init
 ```
 
-Hedgehog's planner selects this core automatically when the project
-targets DSH or Cordis. You can also request it directly:
-
 ```
 npx @skyf0xx/hedgehog init --deepseek-harness
 ```
