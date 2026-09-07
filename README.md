@@ -1,13 +1,13 @@
-# Hedgehog DeepSeek Harness Core ⭐
+# Hedgehog DSH Core ⭐
 
-### Plugins That Don't Break When DSH Moves
+### Plugins That Survive the Next DSH Release
 
-DeepSeek Harness moves fast and pre-1.0 APIs shift underneath you. A
-plugin built freehand today can be broken by next week's release.
+DSH moves fast, and its pre-1.0 APIs shift underneath you. Next week's
+release can break a plugin you built freehand today.
 
 This core builds DSH plugins against a pinned, tested version, through
-the same six-layer discipline every Hedgehog build uses — so a plugin
-ships working, and stays working.
+the same six-layer discipline every Hedgehog build uses. A plugin ships
+working and keeps working.
 
 ```mermaid
 flowchart LR
@@ -22,15 +22,15 @@ flowchart LR
 
 - **A pinned DSH/Cordis workspace**, tested against an exact release
   tag instead of a moving caret range.
-- **A tool-plugin generator**, so plugin boilerplate is generated, not
-  handwritten.
-- **Friction logging built in** — undocumented behavior and breaking
-  changes get recorded as you build, not lost to a Slack thread.
+- **A tool-plugin generator**, so a generator writes the plugin
+  boilerplate instead of you typing it by hand.
+- **Friction logging built in** (undocumented behavior and breaking
+  changes get recorded as you build, instead of lost to a Slack thread).
 
-## Built for real DSH plugin work
+## Built for DSH plugin work
 
 Reach for this core when you're building a tool, hook, or extension for
-an existing DeepSeek Harness installation via its plugin/bundle system.
+an existing DSH installation through its plugin/bundle system.
 
 ## Easy to install and use
 
@@ -45,7 +45,7 @@ npx @skyf0xx/hedgehog init
 ```
 
 Hedgehog's planner selects this core automatically when the project
-targets DeepSeek Harness or Cordis. You can also request it directly:
+targets DSH or Cordis. You can also request it directly:
 
 ```
 npx @skyf0xx/hedgehog init --deepseek-harness
