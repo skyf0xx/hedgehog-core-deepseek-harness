@@ -27,13 +27,16 @@ layers, in the same order, for every deepseek-harness project:
   report the disagreement rather than silently following the YAML. (The
   fix is `hedgehog plan --recompile`, run by whoever is driving the loop,
   not by you mid-task.)
-- **`skills/dsh-plugin-shapes/SKILL.md`** — the reference catalog of the
-  four DSH plugin shapes (tool, hook, UI, protocol-driver). Consult it for
-  the exact DSL — `defineTool`, `apply(ctx)`, `inject`, manifest shape —
-  instead of re-deriving DSH's API from memory or from an rc release you
-  remember working with previously. DSH is pre-1.0 and its DSL shifts
-  between rc tags; the skill is kept current, your memory of a prior rc
-  is not.
+- **`skills/dsh-plugin-shapes/SKILL.md`** — the reference catalog of DSH
+  plugin shapes: tool, hook, UI, protocol-driver, plus agent-team,
+  subagent, job, workflow, webhook, and session-query shapes, and the
+  Agent-passing/`agent.inbox` pattern that replaced `ctx.agent`/`Inbox`.
+  Consult it for the exact DSL — `defineTool`, `apply(ctx)`, `inject`,
+  manifest shape — instead of re-deriving DSH's API from memory or from an
+  rc release you remember working with previously. DSH is pre-1.0 and its
+  DSL shifts between rc tags; the skill is kept current, your memory of a
+  prior rc is not. In particular, don't write `ctx.agent` — it was removed
+  at the pinned tag; the skill covers what replaced it.
 - **The task packet** — INTENT carries the goal and outcome of the *whole*
   intent this layer belongs to (not your layer's objective, which only
   names what kind of thing to build); RELEVANT RULES carry the domain
