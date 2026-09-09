@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI, protocol-driver/service, agent-team, subagent, job, workflow, webhook, or session-query shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, or Web Client slot/panel shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "sidebar panel", "Web Client slot", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,14 +13,16 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.5-alpha.1`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.5-alpha.2`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/agent-team.md`, `docs/subsystems/subagent.md`,
 `docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
-`docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`, and the
-`dsh-v0.1.5-alpha.1` release notes — all at that tag, the same tag
+`docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
+was checked against `docs/subsystems/slots.md` and
+`docs/subsystems/sidebar-right.md`. All of the above plus the
+`dsh-v0.1.5-alpha.2` release notes were read at that tag, the same tag
 `workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
 to. This is the one owning statement of which DSH revision this skill's
 catalog was checked against — every confirmed-event, confirmed-signature,
@@ -35,9 +37,18 @@ re-verifying this file.
 Not every subsystem DSH documents is plugin-authoring surface. Checked and
 excluded at this tag:
 
-- **Sidebar UI** (v0.1.5-alpha.1's new right-panel feature) — pure
-  app-runtime/Web-Client behavior with no `ctx.*` service or extension
-  point a plugin registers against. Nothing here for a plugin to call.
+- **`sdk-minimal`/`minimal` default-tool-set changes** (v0.1.5-alpha.2's
+  "Minimal-profile default tools" note: Web `minimal` and Python
+  `sdk-minimal` are now shell-only by default, with `str_replace_editor`
+  requiring explicit opt-in) — this is bundle/profile composition
+  (`cordis.patch.yml`, `dsh plugin --profile`), the same bundle/manifest
+  wrapper this skill already excludes below as the generator's concern, not
+  a `ctx.*` service or plugin-authoring DSL change. A plugin author's Shape
+  1-9 code is unaffected; only which tools a given profile preloads by
+  default changed.
+- **MCP client pagination-cursor rejection** (v0.1.5-alpha.2 bug fix) —
+  internal robustness of `dsh-mcp-client` consuming a misbehaving external
+  MCP server, not a `ctx.*` surface a DSH plugin author calls.
 - **`docs/subsystems/scope.md`** (`ScopeKey`, `Scoped<T>`, `ScopeLayer`) —
   a dependency-free internal library primitive that `agent`, `session`,
   and other registries build per-agent scoping on top of. It has no Cordis
@@ -249,14 +260,15 @@ worked example:
   Client — named as a real extension point, but again with no worked
   example at that tag.
 
-**Honesty note:** treat `agent.followup()`, `agent.steer()`, and
-`ConversationNodeDefinition` as confirmed to exist by name, but not
-confirmed in their exact shape (parameters, return type, registration
-site). Don't invent a signature for any of the three. Before shipping a
-UI plugin against one, re-fetch DSH's docs for the specific call (or the
-Web Client extension docs, if a more specific page exists) to get the
-real signature, and log friction via `hedgehog friction add` if the docs
-still don't cover it at the needed depth.
+**Honesty note:** treat `agent.followup()` and `agent.steer()` as
+confirmed to exist by name; their exact signatures are now resolved by
+the Agent-passing section below. `ConversationNodeDefinition` named here
+in earlier tags does not appear in `dsh-v0.1.5-alpha.2`'s `slots.md` —
+the real, doc-verified Web Client contribution mechanism as of this tag
+is the general `ctx.slots` registry and, for the right-Sidebar
+specifically, `ctx.sidebarRightTabs`, both catalogued in full as Shape
+10, below. Use Shape 10 for any new UI-plugin work rather than this
+shape's older, thinner description.
 
 ## Shape 4: Protocol-driver / class-form (service) plugin
 
@@ -638,6 +650,161 @@ linked doc or its source file before constructing one, and log friction
 via `hedgehog friction add` if a needed shape isn't covered at the depth
 you need.
 
+## Shape 10: Web Client slot/panel plugin (`ctx.slots`)
+
+A plugin that contributes UI into the built-in Web Client — a sidebar
+panel, a conversation header action, a right-Sidebar tab type — rather
+than registering a tool, hook, or backend service. Confirmed against
+`docs/subsystems/slots.md`'s generated Client surface. This resolves
+Shape 3's former "Sidebar UI"/`ConversationNodeDefinition` honesty note:
+as of `dsh-v0.1.5-alpha.2`, this is a real, doc-verified, `ctx.*`-backed
+extension point, not an app-runtime-only feature.
+
+`ctx.slots` is the Web Client's typed React composition registry. A
+feature plugin contributes a component into a named slot with
+`ctx.slots.register()`, and — when contributing into a slot it doesn't
+itself own — waits for the owning declaration's lifetime with
+`ctx.slots.inject(key, callback)` first:
+
+```ts
+import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+
+type HeaderActionProps = PropsRuntime<'conversation.session.header.actions'>
+
+function HeaderAction({ useSession }: HeaderActionProps) {
+  const running = useSession(snapshot => snapshot.running)
+  return <button disabled={running}>Review</button>
+}
+
+export const inject = ['slots']
+
+export function apply(ctx: Context): void {
+  ctx.slots.inject('conversation.session.header.actions', () =>
+    ctx.slots.register({
+      name: 'conversation.session.header.actions',
+      id: 'review',
+      order: 100,
+    }, HeaderAction))
+}
+```
+
+**Cardinality** (fixed per slot by its declaration): `single` (one cell,
+priority winner renders), `list` (cells addressed by required `id`,
+ordered by `order` then registration order), `keyed` (the owner dispatches
+an `entryKey`; the matching cell renders), `chain` (each entry supplies
+`select(owner)`; the first non-null result in priority order renders).
+**Scope** (also fixed per slot): `root` (one instance), `session-maybe`
+(renderable without a Session; Session values optional), `session`
+(requires a resolved Session binding). `priority` is a shadowing rank for
+`single`/`list`/`keyed` and an election order for `chain` — lower values
+run or render first.
+
+A registered component receives: owner values and standard scope values
+(`PropsRuntime<K>`), authorized child renderers for any slot it declares
+itself (`PropsRenderSlots<S>`), a selector hook and mutations for a
+declared `store` (`PropsStore<H>`), private data/callbacks from a
+registration-level `inject` factory (`InjectFace<I>`), a localized `t`
+from a declared `locale` namespace, and — for a `chain` slot — the elected
+`matched` value. Components never receive `ctx` directly; services and
+model objects stay in the `apply` closure and are projected into
+callbacks or observable sources passed through `inject`. Framework-wide
+standard props available by scope include `useSessions`,
+`useWorkspaces`, `usePanelInfo` (every scope), and — for `session`/
+`session-maybe` — `sessionId`, `useSession`, `useProjection`,
+`useConversation`, `useInput`, `inputActions`.
+
+**The shipped hierarchy** (per `slots.md`'s "Current hierarchy") is the
+authoritative list of registrable slot keys — a plugin registers only
+into a key that appears here; guessing a plausible-sounding key is the
+same mistake Shape 2's honesty note warns against for event names:
+
+```text
+root
+├─ sidebar
+│  ├─ sidebar.brand.mark / sidebar.brand.name / sidebar.panellist
+│  ├─ sidebar.footer.action / sidebar.workspaces / sidebar.settings
+│     └─ (settings.trigger, settings.section, settings.plugins.tab, …)
+├─ main
+│  └─ main.conversation
+│     ├─ conversation.session → conversation.view → conversation.chat.node → …
+│     ├─ conversation.session.header → (.actions, .utilities, .corner, …)
+│     ├─ conversation.composer / conversation.composer.bar → …
+│     └─ conversation.hero.* (brand.mark, workspace, agentPreset)
+├─ rightbar
+│  └─ rightbar.session
+│     ├─ sidebar.right.pane.tab → sidebar.right.tab.guide
+│     ├─ sidebar.right.pane.tab.title
+│     └─ sidebar.right.tab.menu.item
+└─ shell.overlay
+```
+
+`sidebar.panellist` and `main` are where a plugin registers a global
+panel; `main.conversation` is where the conversation UI itself now lives
+— this is the `dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release
+note ("插件 Agent API 调整" sibling note "Web 插件面板 API 调整"): plugins
+register global panels through `sidebar.panellist` and `main`, and the
+former root-level `conversation` slot moved to the `conversation` key
+under `main`. Re-run `pnpm run gen-client-catalog`'s generated Client
+inspect catalog (or `cordis_inspect what:"client"` against a running
+instance) for the exhaustive, current contract of any key — cardinality,
+scope, owner props, current occupants, declaration owner, replacement
+risk — rather than treating the tree above as exhaustive on its own; it's
+a shape reference, not the generated catalog itself.
+
+**Right-Sidebar tab types** are a further, more specific registration on
+top of the general slot system, confirmed against
+`docs/subsystems/sidebar-right.md`: `ctx.sidebarRightTabs.register(definition)`
+registers a tab-type implementation (an `id`, a `kind`, optional resource-
+address `patterns`, a `priority` band of `extension`/`builtin`/`fallback`,
+optional `canOpen(address)` veto, `title(address)`, optional `guide` entry
+metadata), and the tab's body/title are separately registered into the
+keyed `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title` slots
+under that same `id`:
+
+```ts
+import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+
+export const inject = ['sidebarRightTabs', 'slots']
+
+export function apply(ctx: Context): void {
+  ctx.effect(() => ctx.sidebarRightTabs.register({
+    id: '@acme/dsh-client-ui-image',
+    kind: 'image',
+    patterns: ['*.png', '*.jpg', '*.gif', '*.svg'],
+    canOpen: address => address.startsWith('dsh-resource://file/'),
+    title: address => address.slice(address.lastIndexOf('/') + 1),
+  }), 'image type')
+  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
+    { name: 'sidebar.right.pane.tab', key: '@acme/dsh-client-ui-image' },
+    ImageBody,
+  )), 'image body')
+}
+```
+
+`ctx.sidebarRight` is the navigation controller a plugin's own UI code
+calls to open content: `openResource(address, options?)` for a
+`dsh-resource://` address, `openTab(kind, options?)` for a page tab; both
+throw for an address/kind nothing claims (a wiring mistake, not a user
+error). `close`, `active`, `isExpanded`, `toggleExpanded`, `focus`,
+`split`, `float`, and `dock` are the other confirmed methods, all
+requiring a mounted Session surface for writes.
+
+**Honesty note:** the tab-type `definition`'s exact TypeScript shape
+beyond the fields listed above, the full `SidebarRightResourceParamsMap`/
+`SidebarRightTabParamsMap` merge-extensible param types, and
+`useTabInfo()`'s complete return shape are not transcribed here — see
+`sidebar-right.md`'s "Tab-type registration" and "Slots and owner props"
+sections directly before constructing a definition object. Registering a
+resource *provider* (as opposed to a Sidebar tab type) goes through
+`ctx.resources.register(provider)` per `docs/subsystems/client-resources.md`,
+which this pass did not fetch in full — confirm the provider contract
+there before implementing one, and log friction via `hedgehog friction
+add` if it's thin.
+
 ## Constraints
 
 - This skill catalogs shape and DSL only — it doesn't judge which shape
@@ -655,26 +822,33 @@ you need.
   call `agent.inbox.hasPending()` or `agent.inbox.claim()` — neither is
   public at this tag.
 - Don't invoke an extension-point name (a `ctx.on` event string, a
-  service name, a method like `agent.followup()`) that isn't confirmed
-  in this file or in a doc you've just re-fetched. A plausible-sounding
-  name is still an invented one. This includes literal field names on a
-  request object this skill left as a placeholder comment (Shapes 5, 6,
-  9) — confirm those against the cited source file, don't guess them from
-  the prose description.
+  service name, a method like `agent.followup()`, or a slot key) that
+  isn't confirmed in this file or in a doc you've just re-fetched. A
+  plausible-sounding name is still an invented one. This includes literal
+  field names on a request object this skill left as a placeholder
+  comment (Shapes 5, 6, 9, 10) — confirm those against the cited source
+  file, don't guess them from the prose description. For Shape 10
+  specifically, a slot key must appear in `slots.md`'s "Current
+  hierarchy" or the generated Client inspect catalog — don't register
+  into a key invented from what "feels like" it should exist.
 - Where this skill flags a doc as thin or a signature as unconfirmed
-  (Shape 3's UI plugin calls, Shape 4's `ctx.provide()` correction, the
-  Agent/Inbox section's import-specifier gap, Shapes 5/6/7/8/9's
-  unrestated request-type fields), stay thin rather than filling the gap
-  — re-fetch DSH's docs for the specific call, and log friction via
-  `hedgehog friction add` if the docs still don't cover it, instead of
-  shipping a plugin against a guessed API.
+  (Shape 4's `ctx.provide()` correction, the Agent/Inbox section's
+  import-specifier gap, Shapes 5/6/7/8/9/10's unrestated request-type
+  fields), stay thin rather than filling the gap — re-fetch DSH's docs
+  for the specific call, and log friction via `hedgehog friction add` if
+  the docs still don't cover it, instead of shipping a plugin against a
+  guessed API.
 - Tool-shape plugins go through `pnpm generate:tool <name>` first; this
   skill's Shape 1 snippet is for extending or hand-checking generated
   output, not for hand-authoring a tool plugin from scratch.
 - Shape 5 (Agent Team) sits on a package the doc itself calls
   experimental; Shapes 7 (Jobs) and 8 (Workflow) are abstract seams by
   the docs' own description, not fixed concrete APIs. Treat all three as
-  more likely to move between tags than Shapes 1-4's.
+  more likely to move between tags than Shapes 1-4's. Shape 10 (Web
+  Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and has a
+  large, only-partially-transcribed surface (`client-resources.md`'s
+  provider contract, the full owner-props table per slot) — treat gaps
+  there the same as any other honesty-note gap, not as settled.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
