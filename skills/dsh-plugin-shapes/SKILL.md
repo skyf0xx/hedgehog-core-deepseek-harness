@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.5-alpha.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.5-rc.1`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
@@ -22,7 +22,7 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md` and
 `docs/subsystems/sidebar-right.md`. All of the above plus the
-`dsh-v0.1.5-alpha.2` release notes were read at that tag, the same tag
+`dsh-v0.1.5-rc.1` release notes were read at that tag, the same tag
 `workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
 to. This is the one owning statement of which DSH revision this skill's
 catalog was checked against — every confirmed-event, confirmed-signature,
