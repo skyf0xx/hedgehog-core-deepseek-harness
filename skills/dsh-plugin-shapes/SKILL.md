@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.5-rc.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.6-alpha.1`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
@@ -22,7 +22,7 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md` and
 `docs/subsystems/sidebar-right.md`. All of the above plus the
-`dsh-v0.1.5-rc.2` release notes were read at that tag, the same tag
+`dsh-v0.1.6-alpha.1` release notes were read at that tag, the same tag
 `workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
 to. This is the one owning statement of which DSH revision this skill's
 catalog was checked against — every confirmed-event, confirmed-signature,
@@ -31,6 +31,17 @@ re-pin to a newer `rc` or stable tag needs this skill's claims re-checked
 against the new tag's own docs before the pin line above is updated to
 match; don't bump the pin in `workspace/package.json` without also
 re-verifying this file.
+
+Re-check at `dsh-v0.1.6-alpha.1` found every catalogued Shape 1-10 signature,
+event name, and slot key unchanged from `dsh-v0.1.5-rc.2`. The only catalog
+update from this pass is Shape 9's `ctx.sessionQuery` method list, which
+gained several new confirmed methods (see below). This release's other
+plugin-adjacent-sounding items — the `agent/session-start` → `agent/created`
+lifecycle rename, and Team mode's `spawn_teammate`/disabled
+`subagent`/`subagent_fork` — do not appear anywhere in the doc set this
+skill draws from (they're internal wiring and experimental Team-mode
+surface, not a `ctx.*` call a plugin author makes) and are out of scope for
+this catalog, per "Out of scope, and why" above.
 
 ## Out of scope, and why
 
@@ -640,8 +651,16 @@ read-only, live-preferred query service over the session corpus:
 `observeSession(sessionId, options)`, `searchSessions(request, exec?)`,
 `searchEvents(request, exec?)`, `listSessions(signal?)`,
 `readSession(sessionId)`, `filterSessions(filters, signal?)`,
-`readTitle(sessionId, signal?)`, `listEvents(sessionId)`. No mutation
-methods are documented on this service — treat it as read-only.
+`readTitle(sessionId, signal?)`, `listEvents(sessionId)`. As of
+`dsh-v0.1.6-alpha.1` the doc also confirms `readTitleSnapshot(...)` and
+`readTitleSnapshots(...)` (title plus source header, and title-folding
+across a cancellable multi-session observation), `filterEvents(...)`
+(semantic event search with provider-independent filters), `readSurface(...)`
+(one session's complete current model surface), `traceSession(...)` and
+`traceEvent(...)` (ancestry/descendant and event-replacement tracing), and
+`readEvent(...)` (one event plus a bounded raw-log context window) — exact
+parameter shapes for all of these, old and new, are not transcribed here.
+No mutation methods are documented on this service — treat it as read-only.
 
 **Honesty note:** neither service's full request/filter type
 (`SessionSearchRequest`, `SessionResultFilter`, `WebhookSessionRequest`,
