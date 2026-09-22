@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.6-alpha.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.7-alpha.1`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
@@ -22,7 +22,7 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md` and
 `docs/subsystems/sidebar-right.md`. All of the above plus the
-`dsh-v0.1.6-alpha.2` release notes were read at that tag, the same tag
+`dsh-v0.1.7-alpha.1` release notes were read at that tag, the same tag
 `workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
 to. This is the one owning statement of which DSH revision this skill's
 catalog was checked against — every confirmed-event, confirmed-signature,
@@ -31,24 +31,6 @@ re-pin to a newer `rc` or stable tag needs this skill's claims re-checked
 against the new tag's own docs before the pin line above is updated to
 match; don't bump the pin in `workspace/package.json` without also
 re-verifying this file.
-
-Re-check at `dsh-v0.1.6-alpha.2` found every catalogued Shape 1-9 signature
-and event name unchanged from `dsh-v0.1.6-alpha.1`. Shape 10's "every
-scope" standard props changed: `useSessionPendingInteraction` was replaced
-by `useSessionStatus` and `useSessionRetainInfo` (`slots.md`'s
-scope-props table), and the `session`/`session-maybe` scope descriptions
-were reworded to "inherits/requires a resolved surrounding Provider
-binding" — both updated above. This release's other plugin-adjacent-
-sounding items — `core.md`'s `inbox` projection now registering from the
-`AgentLoop` service rather than per-`ReactLoopInbox` construction (an
-internal-wiring rename, not a change to any confirmed `agent.inbox`
-member), `subagent.md`'s new internal `resolveMaxDepth` helper and
-`subagent/delivery-unavailable` error code (neither is a `ctx.subagents.*`
-method Shape 6 catalogs), and `sidebar-right.md`'s new `browser` tab type
-and Document Preview `renderer`-loading mode (shipped first-party
-features, not a change to the registration APIs Shape 10 documents) — do
-not change any claim this catalog makes and are out of scope for this
-pass, per "Out of scope, and why" above.
 
 ## Out of scope, and why
 
@@ -79,18 +61,31 @@ excluded at this tag:
   catalog/app feature (durable records, active views, read-only Web
   catalog) with no plugin-facing registration point found. If a future
   tag adds one, re-check this file before assuming it's still out.
-- **`dsh-v0.1.6-alpha.2`'s Plugin Manager page and runtime dependency
-  resolution/unloading** ("插件依赖解析模式调整为运行时解析" and Creator
-  mode's move from Cordis dynamic definition/execution tools to
-  Plugin Manager-installed persistent plugins) — this is the Web app's
-  end-user plugin install/enable/disable surface and Creator mode's own
-  scratch-authoring workflow, the same bundle/profile-composition
-  category as the `sdk-minimal` item above, not a `ctx.*` service or
-  plugin-authoring DSL change. No doc in this skill's citation list
-  (`events.md`, `service.md`, the Shape 5-9 subsystem docs, `slots.md`,
-  `sidebar-right.md`) documents a Cordis surface for it. A plugin's own
-  `apply(ctx)` body, `cordis.patch.yml` entry, and Shape 1-10 DSL are
-  unaffected by how the Web app or Creator mode installs it at runtime.
+- **The Plugin Manager page and runtime dependency resolution/unloading**
+  (installing, configuring, and live enabling/disabling plugins from the
+  Web app; Creator mode installing persistent plugins through Plugin
+  Manager rather than its own dynamic definition/execution tools) — this
+  is the Web app's end-user plugin install/enable/disable surface and
+  Creator mode's own scratch-authoring workflow, the same bundle/profile-
+  composition category as the `sdk-minimal` item above, not a `ctx.*`
+  service or plugin-authoring DSL change. No doc in this skill's citation
+  list (`events.md`, `service.md`, the Shape 5-9 subsystem docs,
+  `slots.md`, `sidebar-right.md`) documents a Cordis surface for it. A
+  plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and Shape
+  1-10 DSL are unaffected by how the Web app or Creator mode installs it
+  at runtime.
+- **`ctx.agentPresets` (`AgentPresetRegistry`, `core.md`)** — Agent
+  presets are declared and installed through plugin bundles (a
+  plugin-facing `register(definition: PresetDefinition)` call, "the
+  declaring plugin owns it"), which is squarely plugin-authoring surface
+  and not yet catalogued here. `core.md` gives the method signatures but
+  never states `PresetDefinition`'s field shape or a worked registration
+  example, and no dedicated `docs/subsystems/agent-preset*.md` exists to
+  fill that gap — there isn't enough here yet to catalog a confirmed
+  Shape 11 responsibly. Treat a task that needs to register or resolve
+  an Agent preset from a plugin as needing `packages/preset/agent-preset-registry/src/types.ts`
+  read directly, not this skill; add a Shape 11 once a source read or a
+  future doc pass gives `PresetDefinition`'s fields and a real example.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -579,8 +574,7 @@ export function apply(ctx: Context) {
   ctx.tools.register(defineTool({
     name: 'start-long-task',
     async execute(args) {
-      const agent = ctx.agents.currentInitiator()
-      const id = ctx.jobs.start(/* spec: identity, owner, synchronous starter */)
+      const id = ctx.jobs.start(/* spec: identity, owner session id, output sources, synchronous starter */)
       return id
     },
   }))
@@ -588,21 +582,39 @@ export function apply(ctx: Context) {
 ```
 
 Confirmed methods on `ctx.jobs`: `start(spec)`, `list(caller?)`,
-`get(id, caller?)`, `read(id, caller?)`, `kill(id, caller?, reason?)`,
-`wait(id, timeoutMs, caller?, signal?)`, `onJobDone(listener)`,
-`onJobsChanged(listener)`, `attachController(name)` — each optional
-`caller` an explicit `Agent` (the same explicit-passing pattern as
-everywhere else in this catalog; a non-agent caller sees only unowned
-jobs). Ownership is fenced by the caller's session id: "Ids are
-predictable, so authorization — not secrecy — is the boundary," per the
-doc. A job controller (something that can read/stop jobs for a scope of
-owners) calls `attachController(name)` — `start` refuses work for an
-owner no attached controller serves.
+`get(id, caller?)`, `read(id, caller?)` (consumes the ring from the
+model's own cursor), `readAt(id, from, caller?)` (non-consuming, resumes
+from a prior read's offset), `kill(id, caller?, reason?)`,
+`wait(id, timeoutMs, caller?, signal?)`, `remove(id, caller?)`,
+`attachController(name)` — each optional `caller` a `SessionId`, not an
+`Agent` (ownership is fenced by session id, not by an explicit-agent
+pass). Rather than callback-style `onJobDone`/`onJobsChanged` listeners,
+consumers subscribe to one filtered `events` stream carrying lifecycle
+events (`registered`, `progress`, `stopping`, `removed`, `settled`) and
+`output` events (id + new ring total only, so an observer schedules its
+own `readAt`). "Ids are predictable, so authorization — not secrecy — is
+the boundary," per the doc. A job controller (something that can
+read/stop jobs for a scope of owners) calls `attachController(name)` —
+`start` refuses work for an owner no attached controller serves.
 
-**Honesty note:** `JobStart`, `JobSnapshot`, and `JobRead`'s exact fields
-are declared in `packages/jobs/jobs/src/types.ts` per the doc's source
-link, not fully restated in this skill. Confirm field names against the
-doc or source before constructing a `JobStart` spec.
+The starter (`spec.run`) receives a `JobHandle` — `{ id, append(text,
+options?), updateProgress(line) }` — instead of returning a
+`readOutput()` closure: a streaming producer calls `handle.append()` as
+output arrives, and `updateProgress()` replaces the live progress line.
+A job whose result is a single value rather than a stream (a subagent's
+report, a workflow's rendered result) returns it as `JobOutcome.result`,
+delivered once on the model's next `read()`. `spec.output` can instead
+list pull sources (`JobOutputSource`, the subprocess `readFrom` family)
+that the registry pumps into the ring on its own cadence — a producer
+using pull sources folds nothing into `done`.
+
+**Honesty note:** `JobSpec`'s exact fields (including `owner?: SessionId`
+and `output?: readonly JobOutputSource[]`), `JobView`, `JobRead`,
+`JobOutputRead`, `JobOutcome`, and `JobEvent`'s full variant shapes are
+declared in `packages/jobs/jobs/src/types.ts` and the client-safe
+`packages/jobs/jobs/src/view.ts`, not fully restated in this skill.
+Confirm field names against the doc or source before constructing a
+`JobSpec` or handling a `JobEvent`.
 
 ## Shape 8: Workflow-scripting plugin (`ctx.workflowEngine`)
 
