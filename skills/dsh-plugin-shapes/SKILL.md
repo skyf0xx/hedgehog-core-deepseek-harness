@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.6-alpha.1`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.6-alpha.2`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
@@ -22,7 +22,7 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md` and
 `docs/subsystems/sidebar-right.md`. All of the above plus the
-`dsh-v0.1.6-alpha.1` release notes were read at that tag, the same tag
+`dsh-v0.1.6-alpha.2` release notes were read at that tag, the same tag
 `workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
 to. This is the one owning statement of which DSH revision this skill's
 catalog was checked against — every confirmed-event, confirmed-signature,
@@ -32,16 +32,23 @@ against the new tag's own docs before the pin line above is updated to
 match; don't bump the pin in `workspace/package.json` without also
 re-verifying this file.
 
-Re-check at `dsh-v0.1.6-alpha.1` found every catalogued Shape 1-10 signature,
-event name, and slot key unchanged from `dsh-v0.1.5-rc.2`. The only catalog
-update from this pass is Shape 9's `ctx.sessionQuery` method list, which
-gained several new confirmed methods (see below). This release's other
-plugin-adjacent-sounding items — the `agent/session-start` → `agent/created`
-lifecycle rename, and Team mode's `spawn_teammate`/disabled
-`subagent`/`subagent_fork` — do not appear anywhere in the doc set this
-skill draws from (they're internal wiring and experimental Team-mode
-surface, not a `ctx.*` call a plugin author makes) and are out of scope for
-this catalog, per "Out of scope, and why" above.
+Re-check at `dsh-v0.1.6-alpha.2` found every catalogued Shape 1-9 signature
+and event name unchanged from `dsh-v0.1.6-alpha.1`. Shape 10's "every
+scope" standard props changed: `useSessionPendingInteraction` was replaced
+by `useSessionStatus` and `useSessionRetainInfo` (`slots.md`'s
+scope-props table), and the `session`/`session-maybe` scope descriptions
+were reworded to "inherits/requires a resolved surrounding Provider
+binding" — both updated above. This release's other plugin-adjacent-
+sounding items — `core.md`'s `inbox` projection now registering from the
+`AgentLoop` service rather than per-`ReactLoopInbox` construction (an
+internal-wiring rename, not a change to any confirmed `agent.inbox`
+member), `subagent.md`'s new internal `resolveMaxDepth` helper and
+`subagent/delivery-unavailable` error code (neither is a `ctx.subagents.*`
+method Shape 6 catalogs), and `sidebar-right.md`'s new `browser` tab type
+and Document Preview `renderer`-loading mode (shipped first-party
+features, not a change to the registration APIs Shape 10 documents) — do
+not change any claim this catalog makes and are out of scope for this
+pass, per "Out of scope, and why" above.
 
 ## Out of scope, and why
 
@@ -72,6 +79,18 @@ excluded at this tag:
   catalog/app feature (durable records, active views, read-only Web
   catalog) with no plugin-facing registration point found. If a future
   tag adds one, re-check this file before assuming it's still out.
+- **`dsh-v0.1.6-alpha.2`'s Plugin Manager page and runtime dependency
+  resolution/unloading** ("插件依赖解析模式调整为运行时解析" and Creator
+  mode's move from Cordis dynamic definition/execution tools to
+  Plugin Manager-installed persistent plugins) — this is the Web app's
+  end-user plugin install/enable/disable surface and Creator mode's own
+  scratch-authoring workflow, the same bundle/profile-composition
+  category as the `sdk-minimal` item above, not a `ctx.*` service or
+  plugin-authoring DSL change. No doc in this skill's citation list
+  (`events.md`, `service.md`, the Shape 5-9 subsystem docs, `slots.md`,
+  `sidebar-right.md`) documents a Cordis surface for it. A plugin's own
+  `apply(ctx)` body, `cordis.patch.yml` entry, and Shape 1-10 DSL are
+  unaffected by how the Web app or Creator mode installs it at runtime.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -716,10 +735,11 @@ ordered by `order` then registration order), `keyed` (the owner dispatches
 an `entryKey`; the matching cell renders), `chain` (each entry supplies
 `select(owner)`; the first non-null result in priority order renders).
 **Scope** (also fixed per slot): `root` (one instance), `session-maybe`
-(renderable without a Session; Session values optional), `session`
-(requires a resolved Session binding). `priority` is a shadowing rank for
-`single`/`list`/`keyed` and an election order for `chain` — lower values
-run or render first.
+(inherits the surrounding Provider binding but stays renderable without
+one; Session values optional), `session` (requires a resolved surrounding
+Provider binding, receiving definite Session values). `priority` is a
+shadowing rank for `single`/`list`/`keyed` and an election order for
+`chain` — lower values run or render first.
 
 A registered component receives: owner values and standard scope values
 (`PropsRuntime<K>`), authorized child renderers for any slot it declares
@@ -731,9 +751,10 @@ from a declared `locale` namespace, and — for a `chain` slot — the elected
 model objects stay in the `apply` closure and are projected into
 callbacks or observable sources passed through `inject`. Framework-wide
 standard props available by scope include `useSessions`,
-`useWorkspaces`, `usePanelInfo` (every scope), and — for `session`/
-`session-maybe` — `sessionId`, `useSession`, `useProjection`,
-`useConversation`, `useInput`, `inputActions`.
+`useSessionStatus`, `useSessionRetainInfo`, `useWorkspaces`, `usePanelInfo`
+(every scope), and — for `session`/`session-maybe` — `sessionId`,
+`useSession`, `useProjection`, `useConversation`, `useInput`,
+`inputActions`.
 
 **The shipped hierarchy** (per `slots.md`'s "Current hierarchy") is the
 authoritative list of registrable slot keys — a plugin registers only
