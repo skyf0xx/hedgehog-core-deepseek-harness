@@ -26,9 +26,11 @@ forward, not designed around.
   visibility step after `smoke` passes, and the Correction Protocol for
   fixing a wrong upstream layer. Invoke it at the start of any build
   session and for "what's next".
+<!-- hedgehog:bootstrap-only start -->
 - **`hedgehog-bootstrap-deepseek-harness-core`** — run **once**, at
   project start, to land the pinned pnpm workspace and generator
   tooling. Skip if `core.yaml` already exists at the repo root.
+<!-- hedgehog:bootstrap-only end -->
 - **`dsh-plugin-shapes`** — the plugin-body construction library: the
   four DSH plugin shapes (tool, hook, UI, protocol-driver/service) with
   real, doc-verified DSL. `harness-eng` consults it at the `logic` layer
@@ -39,16 +41,6 @@ forward, not designed around.
 
 ### The agents — delegate the judgment calls
 
-- **`planner`** — planning intake at project start (which core applies),
-  then this core's own intake: confirming a plugin's name and goal with
-  the user and writing its intent (`hedgehog intent add`, one call per
-  plugin — no BMAD mining, no brief to lock). Hands off to `bootstrap` on
-  a project's first plugin; for every plugin after that, its Re-entry
-  pass adds a new intent directly, since this core's module axis gives a
-  new plugin a natural home in the build graph.
-- **`bootstrap`** — runs `hedgehog-bootstrap-deepseek-harness-core`'s
-  steps. Triggered automatically by `planner` after its first run; skip
-  if `core.yaml` already exists at the repo root.
 - **`harness-eng`** — builds every layer, for every plugin: `scaffold`
   (confirms and adjusts `pnpm generate:tool`'s output, fills in the real
   smoke prompt), `logic` (the plugin's actual TypeScript behavior, via
