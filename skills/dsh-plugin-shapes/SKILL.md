@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, or agent-preset shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.agentPresets", "agent preset", "sidebar panel", "Web Client slot", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, or agent-preset shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, and for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "sidebar panel", "Web Client slot", "resource provider", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -20,19 +20,28 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/agent-team.md`, `docs/subsystems/subagent.md`,
 `docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
-was checked against `docs/subsystems/slots.md` and
-`docs/subsystems/sidebar-right.md`. Shape 11 was added from
-`docs/subsystems/core.md`'s `ctx.agentPresets` section, newly complete
-enough at this tag to catalog. All of the above plus the release notes for
-every version between `dsh-v0.1.7-alpha.1` (this file's previous verified
-tag) and `dsh-v0.1.7-rc.1` were read at the new tag, which
-`workspace/package.json` now pins `@deepseek-ai/dsh` and
+was checked against `docs/subsystems/slots.md`,
+`docs/subsystems/sidebar-right.md`, and — as of a follow-up parity pass at
+this same tag — `docs/subsystems/client-resources.md` for `ctx.resources`.
+Shape 11 was added from `docs/subsystems/core.md`'s `ctx.agentPresets`
+section, newly complete enough at this tag to catalog. The
+Agent-passing section's `ctx.agents.create`/`resume`,
+`ctx.agentLoop`, and `ctx.agentDefaultModel` coverage was likewise added
+from `core.md` in that same follow-up pass, run specifically to check this
+file for feature parity with the pinned tag rather than only for
+correctness — the pin bump that first landed `dsh-v0.1.7-rc.1` had
+verified no existing claim was falsified, but had not yet checked every
+cited doc for confirmed surface this file didn't catalog yet. All of the
+above plus the release notes for every version between `dsh-v0.1.7-alpha.1`
+(this file's previously verified tag) and `dsh-v0.1.7-rc.1` were read at
+the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
 true as of that tag. A re-pin to a newer `rc` or stable tag needs this
-skill's claims re-checked against the new tag's own docs before the pin
-line above is updated to match; don't bump the pin in
+skill's claims re-checked against the new tag's own docs — for both
+corrections and feature parity, per `dsh-pin-upgrade/SKILL.md` — before the
+pin line above is updated to match; don't bump the pin in
 `workspace/package.json` without also re-verifying this file.
 
 ## Out of scope, and why
@@ -79,6 +88,21 @@ excluded at this tag:
   at runtime.
 - **`ctx.agentPresets` is now catalogued as Shape 11**, below — see that
   section for what's confirmed and what's still thin.
+- **`ctx.jobController` (`JobController`, `docs/subsystems/jobs.md`,
+  distinct from the already-catalogued Shape 7 `ctx.jobs`)** — its own
+  doc calls it the "Host service backing the generated `ctx.remote.job`
+  namespace," and its `kill` method is framed explicitly as killing "one
+  background job **on a human's behalf**." All three of its methods
+  (`list`, `follow`, `kill`) are `@Remote`-decorated, the same
+  client-facing-endpoint marker Shape 10's `useResource`/slot props
+  material uses for Web-app-consumed surface rather than plugin-authored
+  DSL. This is the Web app's own end-user job-monitoring/kill UI talking
+  to the job registry, the same category as the Plugin Manager item
+  above, not a capability a plugin registers or calls to build its own
+  behavior. A plugin implementing or consuming background jobs uses
+  Shape 7's `ctx.jobs` instead. Re-check this file if a future tag turns
+  any of `ctx.jobController`'s methods into something a plugin can
+  register against rather than only a Remote-consumed read/kill surface.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -407,6 +431,64 @@ work around.
    Per the doc: "Ambient presence is neither liveness proof nor
    authorization" — don't use either method as an authorization check;
    they're for attribution only.
+
+**Confirmed as of `dsh-v0.1.7-rc.1`: `ctx.agents` also creates and looks
+up agents**, not just attribution reads. A plugin that needs to spin up a
+fresh agent (a background-job or workflow plugin's own subordinate agent,
+for example) has a doc-verified path:
+
+```ts
+export const inject = ['agents']
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'spawn-worker',
+    async execute() {
+      const handle = await ctx.agents.create({
+        /* shared identity, optional live parent, session seed/metadata,
+           agent options — see CreateAgentOptions in core.md */
+      })
+      return handle.agent.id
+    },
+  }))
+}
+```
+
+Confirmed methods: `create(options: CreateAgentOptions): Promise<AgentHandle>`
+(construct a fresh agent and session through the registered factory,
+returning a handle the owner can tear down), `resume(options:
+ResumeAgentOptions): Promise<AgentHandle>` (load a persisted session and
+resume an agent on it — rejects if persistence isn't configured), `get(id:
+SessionId): Agent | undefined` (look up a live agent by id), `list():
+Agent[]` (every live agent, registration order), `isOwnedBy(id, owner):
+boolean` (whether a live agent was created through one exact parent's
+scoped context). `ctx.agentLoop` (`AgentLoop`, a separate confirmed
+service — `inject = ['agentLoop']`) is the concrete factory these calls
+delegate to, with its own `create(id, options, meta)`, `createAgent(ownerCtx,
+options)`, and `resume(ownerCtx, options)` — reach for `ctx.agents.create`/
+`resume` first; use `ctx.agentLoop` directly only when a plugin is
+implementing agent creation itself rather than requesting it.
+
+**Honesty note:** `register(agent)`, `enter(agent, owner)`, and
+`announce(agent, source, signal?)` are also confirmed methods on
+`ctx.agents`, but the doc frames them as an "advanced ordered-lifecycle
+primitive" for a plugin implementing its own `AgentFactory` via
+`setFactory()` — "ordinary callers use `register`" is the doc's own
+guidance for `enter`, and `register` itself is for recording an
+already-constructed agent, not the common case. Reach for `create`/
+`resume` above unless a plugin's whole purpose is providing an alternative
+agent factory (the Shape 4 class-form pattern, applied to
+`AgentFactory`); `CreateAgentOptions`, `ResumeAgentOptions`, `AgentHandle`,
+and `AgentFactory`'s exact field shapes aren't transcribed here — read
+`docs/subsystems/core.md`'s `ctx.agents`/`ctx.agentLoop` sections and
+`packages/core/agent-loop/src/index.ts` directly before constructing one.
+
+**Confirmed `ctx.agentDefaultModel`** (`AgentDefaultModelConfig`, a small,
+separate service) owns the default model selection independently of any
+Host or transport: `currentSelection(): ModelSelection` and `async
+saveSelection(next: ModelSelection): Promise<void>`. `ModelSelection`'s
+exact fields (provider, model, optional reasoning selection) aren't
+transcribed here — confirm them against the doc or source before
+constructing one.
 
 **`agent.inbox` — the `Inbox` type, not a runtime class.** Per the same
 release's notes ("Inbox API 调整" / "Inbox API changes"): "Make `Inbox` a
@@ -881,12 +963,67 @@ beyond the fields listed above, the full `SidebarRightResourceParamsMap`/
 `SidebarRightTabParamsMap` merge-extensible param types, and
 `useTabInfo()`'s complete return shape are not transcribed here — see
 `sidebar-right.md`'s "Tab-type registration" and "Slots and owner props"
-sections directly before constructing a definition object. Registering a
-resource *provider* (as opposed to a Sidebar tab type) goes through
-`ctx.resources.register(provider)` per `docs/subsystems/client-resources.md`,
-which this pass did not fetch in full — confirm the provider contract
-there before implementing one, and log friction via `hedgehog friction
-add` if it's thin.
+sections directly before constructing a definition object.
+
+**`ctx.resources` — the client resource model, confirmed as of
+`dsh-v0.1.7-rc.1` per `docs/subsystems/client-resources.md`.** Turns an
+address (`dsh-resource://<protocol>/…`) into live data for any Web Client
+component, independent of registering a Sidebar tab type. The owner of a
+protocol declares its value type on `ResourceProtocolMap` and registers
+one provider inside its own `ctx.effect` — a protocol has exactly one
+provider; a second registration throws:
+
+```ts
+import type { Context } from '@deepseek-ai/cordis'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import type {} from '@deepseek-ai/dsh-client-resources/client'
+
+interface NoteView { readonly title: string; readonly updatedAt: string }
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface ResourceProtocolMap { note: NoteView }
+}
+
+export const inject = ['resources', 'remote']
+
+export function apply(ctx: Context): void {
+  ctx.effect(() => ctx.resources.register<'note'>({
+    protocol: 'note',
+    async *open(address, { signal }): AsyncIterable<RemoteResult<NoteView>> {
+      const id = new URL(address).pathname.slice(1)
+      yield await ctx.remote.notes.read(id, signal)
+      for await (const change of ctx.remote.notes.follow(id, signal)) yield change
+    },
+  }), 'my-notes: note resource provider')
+}
+```
+
+`open(address, { signal })` returns a stream of `RemoteResult` frames —
+the current state first, then one frame per change — and must stop when
+`signal` aborts; a failure is an `ok: false` frame carrying a
+`RemoteFailure`, and a throw inside the stream is a programming error, not
+caught by the model. Confirmed methods beyond `register(provider)`:
+`ctx.resources.pin(address, signal)` (keeps a resource open without
+subscribing, until `signal` aborts — an already-aborted signal pins
+nothing) and `ctx.resources.source(address)` (the bare, reference-stable
+observable behind the read-side hook below, for callers outside React;
+reading its snapshot does not hold the resource).
+
+Every slot component receives `useResource` in its standard props
+regardless of scope: `useResource<P>(address)` names the protocol as a
+type argument and returns the address's current snapshot — `status: 'none'
+| 'loading' | 'live' | 'failed'`, `value` (the latest `ok` value, kept
+across a failure), and `failure` (the `RemoteFailure`, only set when
+`status` is `'failed'`). Subscribing is what holds the resource open; a
+component that mounts while another holder keeps it alive reads the
+latest value at once without reopening the stream.
+
+**Honesty note:** `ResourceProtocolMap`'s built-in protocol entries beyond
+the doc's own `file`/`subagentchat` examples, and the exact
+`RemoteFailure`/`RemoteResult` type shapes, aren't transcribed here —
+confirm them against `client-resources.md` or
+`packages/client/resources/README.md` before depending on a specific
+provider's value shape.
 
 ## Shape 11: Agent preset plugin (`ctx.agentPresets`)
 
@@ -976,12 +1113,17 @@ types but not expanded here.
   experimental; Shapes 7 (Jobs) and 8 (Workflow) are abstract seams by
   the docs' own description, not fixed concrete APIs. Treat all three as
   more likely to move between tags than Shapes 1-4's. Shape 10 (Web
-  Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and has a
-  large, only-partially-transcribed surface (`client-resources.md`'s
-  provider contract, the full owner-props table per slot) — treat gaps
-  there the same as any other honesty-note gap, not as settled. Shape 11
-  (Agent presets) is new as of `dsh-v0.1.7-rc.1` and leaves
+  Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and still
+  has a large surface — the `client-resources.md` provider contract is
+  now confirmed as of `dsh-v0.1.7-rc.1`, but the full owner-props table
+  per slot key is still not exhaustively transcribed — treat remaining
+  gaps there the same as any other honesty-note gap, not as settled.
+  Shape 11 (Agent presets) is new as of `dsh-v0.1.7-rc.1` and leaves
   `PresetDefinition`'s field shape unresolved — treat it the same way.
+  The `ctx.agents.create`/`resume` and `ctx.agentLoop` surface added to
+  the Agent-passing section at the same tag likewise leaves
+  `CreateAgentOptions`/`ResumeAgentOptions`/`AgentHandle`/`AgentFactory`
+  unresolved beyond their method signatures.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
