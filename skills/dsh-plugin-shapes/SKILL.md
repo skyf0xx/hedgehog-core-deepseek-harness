@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, or Web Client slot/panel shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "sidebar panel", "Web Client slot", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, or agent-preset shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.agentPresets", "agent preset", "sidebar panel", "Web Client slot", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.7-alpha.1`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.1.7-rc.1`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
@@ -21,16 +21,19 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md` and
-`docs/subsystems/sidebar-right.md`. All of the above plus the
-`dsh-v0.1.7-alpha.1` release notes were read at that tag, the same tag
-`workspace/package.json` pins `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools`
-to. This is the one owning statement of which DSH revision this skill's
-catalog was checked against — every confirmed-event, confirmed-signature,
-and "doesn't exist" claim below is only guaranteed true as of that tag. A
-re-pin to a newer `rc` or stable tag needs this skill's claims re-checked
-against the new tag's own docs before the pin line above is updated to
-match; don't bump the pin in `workspace/package.json` without also
-re-verifying this file.
+`docs/subsystems/sidebar-right.md`. Shape 11 was added from
+`docs/subsystems/core.md`'s `ctx.agentPresets` section, newly complete
+enough at this tag to catalog. All of the above plus the release notes for
+every version between `dsh-v0.1.7-alpha.1` (this file's previous verified
+tag) and `dsh-v0.1.7-rc.1` were read at the new tag, which
+`workspace/package.json` now pins `@deepseek-ai/dsh` and
+`@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
+revision this skill's catalog was checked against — every confirmed-event,
+confirmed-signature, and "doesn't exist" claim below is only guaranteed
+true as of that tag. A re-pin to a newer `rc` or stable tag needs this
+skill's claims re-checked against the new tag's own docs before the pin
+line above is updated to match; don't bump the pin in
+`workspace/package.json` without also re-verifying this file.
 
 ## Out of scope, and why
 
@@ -74,18 +77,8 @@ excluded at this tag:
   plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and Shape
   1-10 DSL are unaffected by how the Web app or Creator mode installs it
   at runtime.
-- **`ctx.agentPresets` (`AgentPresetRegistry`, `core.md`)** — Agent
-  presets are declared and installed through plugin bundles (a
-  plugin-facing `register(definition: PresetDefinition)` call, "the
-  declaring plugin owns it"), which is squarely plugin-authoring surface
-  and not yet catalogued here. `core.md` gives the method signatures but
-  never states `PresetDefinition`'s field shape or a worked registration
-  example, and no dedicated `docs/subsystems/agent-preset*.md` exists to
-  fill that gap — there isn't enough here yet to catalog a confirmed
-  Shape 11 responsibly. Treat a task that needs to register or resolve
-  an Agent preset from a plugin as needing `packages/preset/agent-preset-registry/src/types.ts`
-  read directly, not this skill; add a Shape 11 once a source read or a
-  future doc pass gives `PresetDefinition`'s fields and a real example.
+- **`ctx.agentPresets` is now catalogued as Shape 11**, below — see that
+  section for what's confirmed and what's still thin.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -203,6 +196,26 @@ session-event type via `ctx.on`, inside function-form `apply`.
 **Confirmed Cordis-level events** (per `docs/user/develop/framework/events.md`
 at the tag pinned above): `agent/pre-step`, `agent/request`,
 `agent/request-error`, `tools/result`, `session/event`.
+
+**Confirmed as of `dsh-v0.1.7-rc.1`, per `docs/subsystems/core.md`:**
+`agent/created` (serial mode) — fires once an entered agent is ready for
+per-agent initialization after factory setup; listeners run in order and
+are awaited before creation resolves, and a throw or rejection fails
+creation and skips later listeners:
+```ts
+export function apply(ctx: Context) {
+  ctx.on('agent/created', async ({ agent, source, signal }) => {
+    // per-agent initialization; must not await agent.whenIdle() or its own owner's disposal
+  })
+}
+```
+This is a chore-level rename in the underlying framework (the previous,
+unconfirmed `agent/session-start` name some earlier tags' release notes
+described never appeared in this skill's catalog, so there is nothing to
+migrate here) — treat `agent/created` as the confirmed name going
+forward. `agent/disposed` (emit mode, fires after driver quiescence and
+scoped-registration unwind) is also confirmed in the same doc, for the
+symmetric teardown case.
 
 **Confirmed durable session-event types** (delivered through the
 `session/event` Cordis event, not separate `ctx.on` names of their own):
@@ -553,6 +566,24 @@ request rather than guessing field names; log friction via `hedgehog
 friction add` if a needed field still isn't documented at the depth
 needed.
 
+**Confirmed `subagent/*` events** (per `docs/subsystems/subagent.md` as of
+`dsh-v0.1.7-rc.1`), all Shape 2's `ctx.on` pattern: `subagent/start` (emit
+— a provider established a published child; for in-process providers
+`ctx.agents.get(info.id)` resolves during this notification),
+`subagent/end` (emit — a published child settled, paired with
+`subagent/start`), `subagent/provider-added` and `subagent/provider-removed`
+(emit — a provider entered or left the registry). Scope-filtered dispatch
+on `start`/`end` keys the carrier by the delegating parent, so a
+parent-scoped listener sees only its own delegations.
+
+**Confirmed `ctx.subagentModelSelection`** (`SubagentModelSelectionConfig`,
+same doc) — a singleton settings owner read when delegation tools are
+composed for a Session, with one confirmed method: `current()` returns
+`SubagentModelSelectionSettings` (enabled state and allowed routes). Its
+exact settings shape isn't transcribed here; read
+`packages/subagent/tool-subagent/src/model-selection-settings.ts` before
+depending on a specific field.
+
 ## Shape 7: Background job plugin (`ctx.jobs`)
 
 `ctx.jobs` is an **abstract seam**, not a ready-to-call service by
@@ -857,6 +888,54 @@ which this pass did not fetch in full — confirm the provider contract
 there before implementing one, and log friction via `hedgehog friction
 add` if it's thin.
 
+## Shape 11: Agent preset plugin (`ctx.agentPresets`)
+
+A plugin that declares a reusable, YAML-backed Agent composition — the
+mechanism `dsh-v0.1.7-rc.1`'s release notes describe as "Agent presets
+declared and installed through plugin bundles." Confirmed against
+`docs/subsystems/core.md`'s `ctx.agentPresets` (`AgentPresetRegistry`)
+section, newly complete enough at this tag to catalog (earlier tags gave
+method signatures without enough surrounding context to responsibly
+document a worked example):
+
+```ts
+export const inject = ['agentPresets']
+export function apply(ctx: Context) {
+  const dispose = ctx.agentPresets.register(/* PresetDefinition — see honesty note */)
+  // dispose() later removes this plugin's registration
+}
+```
+
+Confirmed methods on `ctx.agentPresets`: `register(definition)` (registers
+and eagerly loads a definition; returns a disposer — "the declaring plugin
+owns it"; activation failure stays visible in the roster rather than
+throwing), `list()` (every declared preset including activation
+failures), `remoteExportList()` (the selection roster and chooser policy),
+`resolve(id?)` (resolve an identity without starting an Agent),
+`readDocument(agentPreset)` (a declaration's child-plugin list as YAML,
+view-only), `mount(ctx, id?)` (bind an unpublished Agent to the current
+preset revision, called from a Agent's own `setup` callback — see the
+`CreateAgentOptions`/`AgentSetup` material in the Agent-passing section
+above for when `setup` runs), `composeFrom(ctx, parent)` (join a child to
+its parent's exact retained revision), `composedPreset(ctx)` (read the
+preset id a live Agent is bound to), `serviceFor(agent, name)` (read a
+service scoped inside an Agent's isolated preset group),
+`recompose(ctx, id)` (rebind a blank Agent — the caller owns the
+blank-session check), `select(agent, agentPreset)` (select a preset before
+a session's first turn), `acquireScope(id?)` (a disposable revision lease
+for cold transcript presentation), and `compositionInventory()` (plugin
+rows without creating an Agent).
+
+**Honesty note:** `PresetDefinition`'s exact field shape is still not
+spelled out in prose in `core.md` — the doc's JSDoc for `register()` calls
+it only "parsed configuration supplied by the declaring plugin." Read
+`packages/preset/agent-preset-registry/src/types.ts` directly before
+constructing one rather than guessing field names, and log friction via
+`hedgehog friction add` if that source file doesn't cleanly resolve the
+shape either. Likewise `AgentPreset`, `AgentPresetRoster`,
+`AgentPresetDocument`, and `AgentPresetComposition` are named as return
+types but not expanded here.
+
 ## Constraints
 
 - This skill catalogs shape and DSL only — it doesn't judge which shape
@@ -900,7 +979,9 @@ add` if it's thin.
   Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and has a
   large, only-partially-transcribed surface (`client-resources.md`'s
   provider contract, the full owner-props table per slot) — treat gaps
-  there the same as any other honesty-note gap, not as settled.
+  there the same as any other honesty-note gap, not as settled. Shape 11
+  (Agent presets) is new as of `dsh-v0.1.7-rc.1` and leaves
+  `PresetDefinition`'s field shape unresolved — treat it the same way.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
