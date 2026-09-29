@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, or agent-preset shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, and for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "sidebar panel", "Web Client slot", "resource provider", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, or user-question shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, and for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,28 +13,27 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.1.7-rc.1`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.0-rc.2`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
-`docs/user/develop/framework/events.md` and `service.md`. The Agent/Inbox
+`docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
+dynamic-registration note and Shape 2's tool-interception waterfalls
+checked against `docs/subsystems/tools.md` (and, for the model-side
+`toolUpdate` mode, `docs/subsystems/llm-streaming.md`). The Agent/Inbox
 section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/agent-team.md`, `docs/subsystems/subagent.md`,
 `docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md`,
-`docs/subsystems/sidebar-right.md`, and — as of a follow-up parity pass at
-this same tag — `docs/subsystems/client-resources.md` for `ctx.resources`.
-Shape 11 was added from `docs/subsystems/core.md`'s `ctx.agentPresets`
-section, newly complete enough at this tag to catalog. The
-Agent-passing section's `ctx.agents.create`/`resume`,
-`ctx.agentLoop`, and `ctx.agentDefaultModel` coverage was likewise added
-from `core.md` in that same follow-up pass, run specifically to check this
-file for feature parity with the pinned tag rather than only for
-correctness — the pin bump that first landed `dsh-v0.1.7-rc.1` had
-verified no existing claim was falsified, but had not yet checked every
-cited doc for confirmed surface this file didn't catalog yet. All of the
-above plus the release notes for every version between `dsh-v0.1.7-alpha.1`
-(this file's previously verified tag) and `dsh-v0.1.7-rc.1` were read at
-the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
+`docs/subsystems/sidebar-right.md`, and `docs/subsystems/client-resources.md`.
+Shape 11 was checked against `docs/subsystems/core.md`'s `ctx.agentPresets`
+section. Shape 12 was checked against `docs/subsystems/schedule.md` and
+Shape 13 against `docs/subsystems/user-questions.md`.
+`docs/subsystems/otel.md` and `docs/subsystems/credentials.md` were read
+at this tag and excluded — see "Out of scope, and why". All of the above
+plus the release notes for every version between `dsh-v0.1.7-rc.1` (this
+file's previously verified tag) and `dsh-v0.2.0-rc.2` — `dsh-v0.1.7-rc.2`,
+`dsh-v0.2.0-rc.1`, `dsh-v0.2.0-rc.2` — were read at the new tag, which
+`workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
@@ -67,24 +66,47 @@ excluded at this tag:
   service of its own (no `ctx.scope`) and nothing a plugin author calls
   directly; the shapes below that need scoping (Shape 2's `ctx.on`, Shape
   4's `Service` subclass) already cover the plugin-visible surface.
-- **`docs/subsystems/schedule.md`** (session-local absolute-time and
-  fixed-rate schedule entries) — has no generated Cordis API section in
-  its doc at this tag (no `ctx.schedule` or equivalent); it's a Web
-  catalog/app feature (durable records, active views, read-only Web
-  catalog) with no plugin-facing registration point found. If a future
-  tag adds one, re-check this file before assuming it's still out.
+- **`ctx.schedule` is now catalogued as Shape 12**, below — `schedule.md`
+  gained a generated Cordis API section (`ScheduleService`, the
+  `schedule/changed` event) whose `create` method is not `@Remote`-only.
+  Its Web task views, catalog, and delivery-history UI remain app surface.
+- **`ctx.otel` (`docs/subsystems/otel.md`)** — a shared OTel transport
+  factory (`createEventReporter`, `createSessionLogReporter`) consumed by
+  the Host's product- and Session-telemetry adapters. It's telemetry
+  infrastructure rather than a capability a feature plugin builds on, and
+  its `EventLogOptions`/`SessionLogOptions` shapes are owned by
+  `packages/telemetry/otel/README.md`, not the doc. A plugin that
+  genuinely needs its own telemetry channel should read that README first
+  and log friction via `hedgehog friction add` if it doesn't resolve the
+  options shape.
+- **`ctx.authorization`, `ctx.credentials`, `ctx.credentialsController`,
+  `ctx.deepseekAccount` (`docs/subsystems/credentials.md`)** — the Host's
+  credential-resolution and DeepSeek Platform account seams (sign-in,
+  balance, bonus notifications, token rejection). These are abstract
+  provider seams the Host composition fills and `@Remote` controllers the
+  Web app's settings UI calls; no doc-given pattern exists for a feature
+  plugin registering against them.
+- **LLM adapter authoring (`docs/subsystems/llm-streaming.md`,
+  `docs/user/develop/practice/llm-adapter.md`)** — including the
+  `toolUpdate` model-info field behind `dsh-v0.1.7-rc.2`'s "dynamic tool
+  additions without invalidating KV Cache" release note. Writing an
+  `LlmAdapter` is its own practice guide with its own abstract class;
+  this skill catalogs only its effect on tool plugins (Shape 1's
+  dynamic-registration note).
 - **The Plugin Manager page and runtime dependency resolution/unloading**
   (installing, configuring, and live enabling/disabling plugins from the
   Web app; Creator mode installing persistent plugins through Plugin
-  Manager rather than its own dynamic definition/execution tools) — this
+  Manager rather than its own dynamic definition/execution tools; Auto
+  review enabled from the Plugins page, Inspector shipped as a separately
+  installed plugin rather than by default; the `dsh` command bundled with
+  macOS/Windows Desktop for plugin management) — this
   is the Web app's end-user plugin install/enable/disable surface and
   Creator mode's own scratch-authoring workflow, the same bundle/profile-
   composition category as the `sdk-minimal` item above, not a `ctx.*`
   service or plugin-authoring DSL change. No doc in this skill's citation
-  list (`events.md`, `service.md`, the Shape 5-9 subsystem docs,
-  `slots.md`, `sidebar-right.md`) documents a Cordis surface for it. A
+  list documents a Cordis surface for it. A
   plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and Shape
-  1-10 DSL are unaffected by how the Web app or Creator mode installs it
+  1-13 DSL are unaffected by how the Web app or Creator mode installs it
   at runtime.
 - **`ctx.agentPresets` is now catalogued as Shape 11**, below — see that
   section for what's confirmed and what's still thin.
@@ -211,6 +233,17 @@ converts that value into model-facing content blocks. This is the shape
 this shape, and use this snippet only to extend or hand-check generated
 output, not to hand-roll a tool plugin from scratch.
 
+**Registering a tool mid-session** (a `ctx.tools.register` call after
+agents already exist, which fires `tools/change`) is recorded in the
+Session log as a developer-role `ToolAdditionBlock`/`ToolRemovalBlock`,
+per `docs/subsystems/llm-streaming.md`. A model route whose resolved
+model info declares `toolUpdate` receives those incremental tool updates
+instead of a re-sent complete tool list, which keeps the provider's KV
+cache prefix intact; a route without `toolUpdate` still declares the
+complete list on every request. Nothing in the tool plugin's own body
+changes either way — don't try to opt into or detect this from the
+plugin; it's the adapter's and Session's concern.
+
 ## Shape 2: Hook plugin
 
 A plugin that observes or intercepts framework activity rather than
@@ -294,14 +327,64 @@ export function apply(ctx: Context) {
 }
 ```
 
-**Honesty note:** `events.md` does not document a `tools/pre-execute`
-event name — that name does not appear in the fetched doc. Don't invoke
-`ctx.on('tools/pre-execute', ...)` or any other extension-point string
-not in the confirmed list above; if a plugin's intent needs a hook point
-this list doesn't cover, that's a gap in DSH's own docs (or a signal the
-event doesn't exist yet), not something to fill by guessing a
-plausible-sounding name. Log it with `hedgehog friction add` and pick a
-confirmed event or a different shape instead.
+**Tool-interception waterfalls — confirmed per `docs/subsystems/tools.md`.**
+`events.md` lists only the framework-level events above; the tool
+pipeline's own events live in `tools.md`'s generated `tools/*` section.
+`ctx.tools.execute()` runs each call through `tools/pre-execute` →
+registered monotonic guards → `tools/execute` → content projection →
+`tools/post-execute` → optional `finalizeContent` → `tools/result`. All
+four hook points below are scope-filtered: an agent-scoped listener sees
+only that agent's calls.
+
+- **`tools/pre-execute`** (waterfall) — `(exec: ToolExecution, next) =>
+  Promise<PreToolDecision>`. Allow, deny, cancel, or ask before dispatch;
+  `next()` delegates to allow. Arguments cannot be rewritten here — history,
+  audit, UI, and execution must agree.
+- **`tools/execute`** (waterfall) — `(exec: ToolDispatchExecution, next) =>
+  Promise<ToolExecutionResult>`. Around-dispatch wrapper for timeout, retry,
+  or metrics; a wrapper may change only `exec.signal`.
+- **`tools/post-execute`** (waterfall) — `(exec, result, next) =>
+  Promise<PostToolDecision>`. Accept, replace content *or* value (never
+  both), attach `additionalContexts`, or `block` with corrective feedback.
+- **`tools/change`** (emit, no payload) — the available tool set changed.
+  Deliberately unfiltered: a scoped listener sees every change.
+
+`tools/ptc-dispatch-log` (waterfall) is also confirmed, but only rewrites
+the durable-log copy of a `run_code` sub-dispatch — reach for it only when
+building a spill/redaction policy for PTC logs.
+
+```ts
+export function apply(ctx: Context) {
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    if (exec.name === 'bash' && isDestructive(exec.arguments)) {
+      return { kind: 'ask', reason: 'Destructive shell command',
+        displayReason: { en: 'This command deletes files. Allow it once?' } }
+    }
+    return next()
+  })
+}
+```
+
+`PreToolDecision` is `{ kind: 'allow' } | { kind: 'deny'; reason: string;
+info?: ToolErrorInfo } | { kind: 'cancel' } | { kind: 'ask'; reason?:
+string; displayReason?: { en: string; [locale: string]: string } }` —
+`reason` on `ask` is the audited approval reason, `displayReason` the
+localized prompt text. `ask` proceeds only when an approval service
+returns `allowed-once`; a missing approval channel, a non-grant, or an
+agent-less call becomes a denial. Async gates must observe `exec.signal`.
+`PostToolDecision` is `{ kind: 'accept'; content?; additionalContexts? } |
+{ kind: 'accept'; value; additionalContexts? } | { kind: 'block'; feedback;
+additionalContexts? }`.
+
+**Honesty note:** don't invoke an extension-point string that isn't in
+the confirmed lists above or in a doc you've just re-fetched; if a
+plugin's intent needs a hook point these lists don't cover, that's a gap
+in DSH's own docs (or a signal the event doesn't exist yet), not
+something to fill by guessing a plausible-sounding name. Log it with
+`hedgehog friction add` and pick a confirmed event or a different shape
+instead. `ToolExecution`'s full field list (`callId`, `rootCallId`,
+`name`, `arguments`, `agent`, `signal`, …) is in `tools.md`'s "Execution"
+section — read it there rather than assuming a field exists.
 
 ## Shape 3: UI plugin
 
@@ -485,7 +568,9 @@ and `AgentFactory`'s exact field shapes aren't transcribed here — read
 **Confirmed `ctx.agentDefaultModel`** (`AgentDefaultModelConfig`, a small,
 separate service) owns the default model selection independently of any
 Host or transport: `currentSelection(): ModelSelection` and `async
-saveSelection(next: ModelSelection): Promise<void>`. `ModelSelection`'s
+saveSelection(next: ModelSelection): Promise<void>`. Saves commit in
+submission order; a failed save rejects its own caller without blocking
+later saves. `ModelSelection`'s
 exact fields (provider, model, optional reasoning selection) aren't
 transcribed here — confirm them against the doc or source before
 constructing one.
@@ -632,7 +717,15 @@ targetId, content, options)`, `interrupt(targetSessionId, authority)`,
 signal?)`, `registerProvider(provider)` / `getProvider(name)` / `list()`
 (provider registry, distinct from the instance-level `list()` on other
 services), `drainContinuableDescendants(parents)`,
-`drainContinuableChildren(parent, childIds)`. A plugin that implements its
+`drainContinuableChildren(parent, childIds)`. `listDescendants` walks
+parent-owned subagent catalogs recursively in stable pre-order — each row
+carries its catalog `parentId` and root-relative `depth` — so a Session
+absent from every reachable catalog (an ordinary Session fork, and any
+subagent below one) is not discovered; an unreadable child catalog
+yields a `corrupt`/`unavailable` diagnostic and stops only that branch,
+while a root read failure or cancellation rejects the whole listing.
+Don't use it as a complete Session-tree walk; `ctx.sessionQuery`'s
+`traceSession` (Shape 9) is the ancestry/descendant tracer. A plugin that implements its
 own backend (rather than delegating to a built-in one) implements
 `SubagentProvider` and calls `registerProvider` — the doc names this
 contract but its full method-by-method shape lives in `docs/subsystems/subagent.md`'s
@@ -889,21 +982,78 @@ same mistake Shape 2's honesty note warns against for event names:
 ```text
 root
 ├─ sidebar
-│  ├─ sidebar.brand.mark / sidebar.brand.name / sidebar.panellist
-│  ├─ sidebar.footer.action / sidebar.workspaces / sidebar.settings
-│     └─ (settings.trigger, settings.section, settings.plugins.tab, …)
+│  ├─ sidebar.brand.mark
+│  ├─ sidebar.brand.name
+│  ├─ sidebar.panellist
+│  ├─ sidebar.footer.action
+│  ├─ sidebar.workspaces
+│  │  ├─ sidebar.workspaces.directoryFlow
+│  │  ├─ sidebar.workspaces.session.menu.item
+│  │  └─ sidebar.workspaces.session.row.action
+│  └─ sidebar.settings
+│     ├─ settings.trigger
+│     ├─ settings.header
+│     ├─ settings.action
+│     ├─ settings.close
+│     ├─ settings.onboarding
+│     └─ settings.section
+│        ├─ settings.general.item
+│        ├─ settings.models.provider-card
+│        ├─ settings.models.footer
+│        └─ settings.plugins.tab
 ├─ main
+│  ├─ plugins.item
+│  ├─ plugins.bundle.config
+│  ├─ plugins.row.config
+│  ├─ plugins.detail.actions
+│  ├─ plugins.detail.badge
+│  ├─ plugins.detail.section
 │  └─ main.conversation
-│     ├─ conversation.session → conversation.view → conversation.chat.node → …
-│     ├─ conversation.session.header → (.actions, .utilities, .corner, …)
-│     ├─ conversation.composer / conversation.composer.bar → …
-│     └─ conversation.hero.* (brand.mark, workspace, agentPreset)
+│     ├─ conversation.session
+│     │  └─ conversation.view
+│     │     ├─ conversation.chat.node
+│     │     │  ├─ conversation.chat.assistant-actions
+│     │     │  ├─ conversation.chat.commandview
+│     │     │  ├─ conversation.chat.turnTail
+│     │     │  └─ tool.call.toolview
+│     │     │     ├─ tool.call.images
+│     │     │     └─ tool.view.cordis
+│     │     ├─ conversation.message.images
+│     │     └─ conversation.trajectory.images
+│     ├─ conversation.header
+│     │  ├─ conversation.header.leading
+│     │  └─ conversation.session.header
+│     │     ├─ conversation.session.header.lineage
+│     │     ├─ conversation.session.header.actions
+│     │     ├─ conversation.session.header.utilities
+│     │     └─ conversation.session.header.corner
+│     ├─ conversation.composer
+│     │  ├─ conversation.approval.detail
+│     │  └─ conversation.plan-review.actions
+│     ├─ conversation.composer.bar
+│     │  ├─ conversation.input.attachments
+│     │  ├─ conversation.input.permission
+│     │  ├─ conversation.input.plan
+│     │  └─ conversation.input.model
+│     ├─ conversation.input.overlay
+│     ├─ conversation.input.dock
+│     ├─ conversation.composer.dock
+│     ├─ conversation.input.left
+│     ├─ conversation.input.right
+│     ├─ conversation.hero.brand.mark
+│     ├─ conversation.hero.workspace
+│     │  └─ conversation.hero.workspace.directoryFlow
+│     └─ conversation.hero.agentPreset
 ├─ rightbar
 │  └─ rightbar.session
-│     ├─ sidebar.right.pane.tab → sidebar.right.tab.guide
+│     ├─ sidebar.right.pane.tab
+│     │  ├─ sidebar.right.tab.guide
+│     │  └─ sidebar.right.tab.guide.entry
 │     ├─ sidebar.right.pane.tab.title
 │     └─ sidebar.right.tab.menu.item
+├─ shell.leading
 └─ shell.overlay
+   └─ shell.quota-notice
 ```
 
 `sidebar.panellist` and `main` are where a plugin registers a global
@@ -916,8 +1066,9 @@ under `main`. Re-run `pnpm run gen-client-catalog`'s generated Client
 inspect catalog (or `cordis_inspect what:"client"` against a running
 instance) for the exhaustive, current contract of any key — cardinality,
 scope, owner props, current occupants, declaration owner, replacement
-risk — rather than treating the tree above as exhaustive on its own; it's
-a shape reference, not the generated catalog itself.
+risk. The tree above is transcribed verbatim from `slots.md` at the
+pinned tag; the generated catalog remains the authority for each key's
+contract.
 
 **Right-Sidebar tab types** are a further, more specific registration on
 top of the general slot system, confirmed against
@@ -957,6 +1108,25 @@ throw for an address/kind nothing claims (a wiring mistake, not a user
 error). `close`, `active`, `isExpanded`, `toggleExpanded`, `focus`,
 `split`, `float`, and `dock` are the other confirmed methods, all
 requiring a mounted Session surface for writes.
+
+For an action that must run against the page the user was looking at —
+a keyboard command, a deferred menu action — capture the target first and
+check it before executing: `focusedTarget(element?)` captures the visible
+page under live DOM focus (including an embedding iframe; outside or stale
+sidebar markup yields no target), `commandTarget(element?)` additionally
+permits the mounted Session's active dock pane for an action initiated
+outside the sidebar, and `isTargetCurrent(target)` confirms the captured
+`SidebarRightTarget` (Session, pane, host, tab occurrence, navigation
+revision) still identifies that page. Reopening or navigating the record
+invalidates a captured target; it never retargets to another page.
+
+A tab body can contribute commands for its mounted lifetime through
+`useTabInfo()`'s `tab.actions.bindCommands(commands)`:
+`SidebarRightTabCommands` is currently an optional `refresh` callback, the
+returned disposer releases the registration without removing a newer
+body's commands, and the tab lifetime also releases it.
+`tab.refreshShortcut` (optional) supplies the effective refresh
+shortcut-catalog entry for page controls.
 
 **Honesty note:** the tab-type `definition`'s exact TypeScript shape
 beyond the fields listed above, the full `SidebarRightResourceParamsMap`/
@@ -1047,7 +1217,8 @@ Confirmed methods on `ctx.agentPresets`: `register(definition)` (registers
 and eagerly loads a definition; returns a disposer — "the declaring plugin
 owns it"; activation failure stays visible in the roster rather than
 throwing), `list()` (every declared preset including activation
-failures), `remoteExportList()` (the selection roster and chooser policy),
+failures), `remoteExportList()` (the selection roster — current presets,
+each marked when it is the default; `@Remote`, for the Web chooser),
 `resolve(id?)` (resolve an identity without starting an Agent),
 `readDocument(agentPreset)` (a declaration's child-plugin list as YAML,
 view-only), `mount(ctx, id?)` (bind an unpublished Agent to the current
@@ -1072,6 +1243,170 @@ constructing one rather than guessing field names, and log friction via
 shape either. Likewise `AgentPreset`, `AgentPresetRoster`,
 `AgentPresetDocument`, and `AgentPresetComposition` are named as return
 types but not expanded here.
+
+## Shape 12: Scheduled-reminder plugin (`ctx.schedule`)
+
+A plugin that schedules a future follow-up message into a Session — a
+one-shot reminder, a fixed-rate check, or a wall-clock recurrence —
+without keeping the Session's Agent alive. Confirmed against
+`docs/subsystems/schedule.md`'s generated Cordis surface
+(`ScheduleService`, package `@deepseek-ai/dsh-schedule`).
+
+**`ctx.schedule` is optional composition.** The shipped Web composition
+carries no `schedule` row; it's mounted by the optional experimental
+bundle `@deepseek-ai/dsh-experimental-schedule-bundle` (enabled from the
+Plugins page, or listed in a profile's `dsh.profile.bundles`) alongside
+storage-domain and the Session controller. A plugin that must still load
+without it uses `ctx.get('schedule')` (Shape 4's optional-dependency
+pattern) rather than `inject`.
+
+```ts
+export const inject = ['schedule']
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'remind-later',
+    // ...
+    async execute(args, exec) {
+      if (!exec.agent) throw new Error('remind-later needs a calling agent')
+      const record = await ctx.schedule.create(exec.agent.id, {
+        prompt: 'Re-run the flaky integration suite and report.',
+        title: 'Flaky suite re-run',
+        after_seconds: 1800,
+      }, exec.signal)
+      return record.id
+    },
+  }))
+}
+```
+
+`create(sessionId, request, signal?)` is the one plugin-callable write:
+it binds a reminder to the given Session without activating it and
+resolves to the durably stored `ScheduleRecord`. `ScheduleCreateRequest`
+requires a non-empty `prompt` (the reminder text delivered later), a
+`title` (trimmed, non-empty, at most 120 characters — a missing, blank, or
+over-long title rejects with `invalid_prompt`; it's never derived from
+the prompt), and **exactly one** of six mutually exclusive selectors:
+`after_seconds` (positive safe-integer delay), `at` (a strictly future
+offset-bearing RFC 3339 string, or `{ date, time, time_zone }`),
+`every_seconds` (safe integer ≥ 60, aligned to creation time — elapsed
+time, not wall-clock), `daily` (`{ time: 'HH:mm:ss', time_zone }`),
+`weekly` (`{ time, time_zone, weekdays }`, ISO weekdays), or `cron`
+(`{ expression, time_zone }`, five-field Vixie cron). Wall-clock selectors
+require an explicit IANA zone; Schedule never reads browser, Session,
+process, or model time-zone context. Cancellation is checked before
+persistence begins and does not roll back a write already in flight.
+
+The remaining methods are `@Remote`-decorated management surface the Web
+task views call — `list({ sessionId })` (a Session's active tasks),
+`catalog()` (every Host task with its Session binding), `history(...)`
+(saved deliveries, newest first, `limit` 1-100), `delete({ ... })`, and
+`update({ ... })` (replace name, instruction, or timing in place; not
+offered for `after`). A plugin may call them, but a plugin whose job is
+"show or edit the task list" is duplicating shipped UI. A plugin that
+needs to react to task changes listens for **`schedule/changed`** (emit,
+no payload — refetch rather than expecting a diff).
+
+**Delivery semantics a plugin must not assume away:** at the due time the
+Host resolves the original Session (restoring it cold if needed) and
+appends the prompt as a plugin-sourced `followup()` — delivered as a
+clearly labelled scheduled user message. It never steers or cancels the
+current turn and doesn't wait for model completion. There is no
+model-result acknowledgement, execution cancellation, or external
+notification channel, and a crash between inbox persistence and the task
+write can repeat a delivery — design the reminder prompt to be safe to
+receive twice. Delivery requires a Session persistence backend
+(`sessionPersistence` is a load-order requirement of this service).
+
+**Honesty note:** `ScheduleRecord`'s per-selector variants,
+`ScheduleDeleteRequest`/`ScheduleUpdateRequest`/`ScheduleDeliveryHistoryRequest`'s
+fields, and `ScheduleUpdateResult`'s outcome union are declared in
+`packages/schedule/schedule/src/types.ts` and `schedule.md`'s "Durable
+records"/"Timing edits" sections — not transcribed here. The example
+relies on two doc-confirmed facts: `execute`'s second argument is a
+`ToolRunContext`, which extends `ToolExecution` and so carries the
+optional calling `agent` and required `signal` (`tools.md`); and
+`Agent.id` is the agent's `SessionId` (`core.md`).
+
+## Shape 13: User-question plugin (`ctx.userQuestions`)
+
+A plugin that needs a human answer before an agent continues — a
+permission gate, a plan-review step, a clarifying choice inside a tool —
+or that supplies an alternative answering surface. Confirmed against
+`docs/subsystems/user-questions.md`'s generated Cordis surface
+(`UserQuestionService`, package `@deepseek-ai/dsh-user-questions`).
+
+**Asking** — `ask(request)` runs the scoped answerer waterfall and waits
+for the answer; `askTimed(request, callId, timeoutMs)` waits for a bounded
+foreground window and then returns `{ pending: true, callId }` so the
+agent can continue independent work (the question stays answerable, and a
+late reply arrives as a new user message):
+
+```ts
+export const inject = ['userQuestions']
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'pick-target',
+    // ...
+    async execute(args, exec) {
+      const { answers } = await ctx.userQuestions.ask({
+        agent: exec.agent,
+        signal: exec.signal,
+        questions: [{
+          id: 'env',
+          question: 'Which environment should this deploy to?',
+          options: [{ label: 'staging' }, { label: 'production' }],
+        }],
+      })
+      const env = answers.find(a => a.id === 'env')
+      return env?.custom ?? env?.selected[0] ?? 'staging'
+    },
+  }))
+}
+```
+
+Confirmed request shape: `AskUserQuestionRequest` carries `questions:
+AskUserQuestionItem[]`, optional `agent`, optional `signal`, and optional
+`wait: { callId, timed? }` (card-keying for Client answerers). Each item
+is `{ id, question, detail?, header?, options?: { label, description? }[],
+multiSelect?, intent? }`; `intent` is currently only `{ kind:
+'plan-review', approve: <option label>, callId? }`, requires `detail`, and
+changes presentation only. The answer is `{ answers: { id, selected:
+string[], custom?: string }[] }` — for single-select, `custom` overrides
+and `selected` is empty; an item with empty `selected` and no `custom` is
+a skipped question.
+
+**Who may ask:** when `agent` is supplied it must be the registry's exact
+live **runtime root** — an owned child (a subagent) has no human answerer
+and is rejected with `DELEGATED_CALLER`; a stale instance with
+`CALLER_NOT_LIVE`; an aborted signal with `ASK_ABORTED`. `askTimed`
+rejects a non-integer, non-positive, or oversized wait with
+`BAD_TIMEOUT`. `UserQuestionError` extends `HarnessError`, so a tool that
+lets it propagate surfaces `{ name, code }` to the model.
+
+**Answering** — a plugin providing its own answer surface listens on the
+**`user-questions/request`** waterfall (agent-scoped): return an
+`AskUserQuestionAnswer` to claim the request, or `next()` to delegate to
+the next answerer:
+
+```ts
+ctx.on('user-questions/request', async (request, next) => {
+  if (!canAnswerHere(request)) return next()
+  return { answers: await collectAnswers(request.questions, request.signal) }
+})
+```
+
+A timed request arrives with `wait: { callId, timed: true }`; a UI
+answerer claims the foreground wait through the `@Remote` `attachWait`
+stream before starting its own countdown. `answer(agent, callId,
+answer)` (also `@Remote`) is the late-reply path for a `continued`
+question — Web app surface, not something a plugin normally calls.
+
+**Honesty note:** the experimental asynchronous question mode
+(`dsh-v0.2.0-rc.2`) needs manual configuration to enable, and its config
+key isn't named in `user-questions.md` — don't assume `askTimed` is what
+the shipped `ask_user_question` tool uses by default. The
+`UserQuestionProjectionView` Session projection (active/settled timed
+questions) is Client read surface, not transcribed here beyond its name.
 
 ## Constraints
 
@@ -1101,7 +1436,7 @@ types but not expanded here.
   into a key invented from what "feels like" it should exist.
 - Where this skill flags a doc as thin or a signature as unconfirmed
   (Shape 4's `ctx.provide()` correction, the Agent/Inbox section's
-  import-specifier gap, Shapes 5/6/7/8/9/10's unrestated request-type
+  import-specifier gap, Shapes 5/6/7/8/9/10/12's unrestated request-type
   fields), stay thin rather than filling the gap — re-fetch DSH's docs
   for the specific call, and log friction via `hedgehog friction add` if
   the docs still don't cover it, instead of shipping a plugin against a
@@ -1123,7 +1458,10 @@ types but not expanded here.
   The `ctx.agents.create`/`resume` and `ctx.agentLoop` surface added to
   the Agent-passing section at the same tag likewise leaves
   `CreateAgentOptions`/`ResumeAgentOptions`/`AgentHandle`/`AgentFactory`
-  unresolved beyond their method signatures.
+  unresolved beyond their method signatures. Shape 12 (Schedule) is
+  mounted only by an optional *experimental* bundle, and Shape 13's timed
+  questions sit behind an experimental, manually enabled mode — treat
+  both as more likely to move between tags than Shapes 1-4.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
