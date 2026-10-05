@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.0-rc.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.1-alpha.1`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
 dynamic-registration note and Shape 2's tool-interception waterfalls
@@ -28,11 +28,11 @@ was checked against `docs/subsystems/slots.md`,
 Shape 11 was checked against `docs/subsystems/core.md`'s `ctx.agentPresets`
 section. Shape 12 was checked against `docs/subsystems/schedule.md` and
 Shape 13 against `docs/subsystems/user-questions.md`.
-`docs/subsystems/otel.md` and `docs/subsystems/credentials.md` were read
-at this tag and excluded — see "Out of scope, and why". All of the above
+`docs/subsystems/otel.md`, `docs/subsystems/credentials.md`, and
+`docs/subsystems/scope.md` were read at this tag and excluded — see "Out of scope, and why". All of the above
 plus the release notes for every version between `dsh-v0.1.7-rc.1` (this
-file's previously verified tag) and `dsh-v0.2.0-rc.2` — `dsh-v0.1.7-rc.2`,
-`dsh-v0.2.0-rc.1`, `dsh-v0.2.0-rc.2` — were read at the new tag, which
+file's previously verified tag) and `dsh-v0.2.1-alpha.1` — `dsh-v0.1.7-rc.2`,
+`dsh-v0.2.0-rc.1`, `dsh-v0.2.0-rc.2`, `dsh-v0.2.1-alpha.1` — were read at the new tag, which
 `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
@@ -1008,6 +1008,7 @@ root
 │  ├─ plugins.detail.actions
 │  ├─ plugins.detail.badge
 │  ├─ plugins.detail.section
+│  ├─ plugins.add.actions
 │  └─ main.conversation
 │     ├─ conversation.session
 │     │  └─ conversation.view
@@ -1051,6 +1052,7 @@ root
 │     │  └─ sidebar.right.tab.guide.entry
 │     ├─ sidebar.right.pane.tab.title
 │     └─ sidebar.right.tab.menu.item
+├─ shell.bottom
 ├─ shell.leading
 └─ shell.overlay
    └─ shell.quota-notice
@@ -1228,6 +1230,9 @@ above for when `setup` runs), `composeFrom(ctx, parent)` (join a child to
 its parent's exact retained revision), `composedPreset(ctx)` (read the
 preset id a live Agent is bound to), `serviceFor(agent, name)` (read a
 service scoped inside an Agent's isolated preset group),
+`inspectCompositions(ctx?)` (synchronous; detached module references and
+isolation diagnostics for every retained revision, or only the exact
+revision the given Agent joined; no match returns an empty list),
 `recompose(ctx, id)` (rebind a blank Agent — the caller owns the
 blank-session check), `select(agent, agentPreset)` (select a preset before
 a session's first turn), `acquireScope(id?)` (a disposable revision lease
@@ -1252,13 +1257,13 @@ without keeping the Session's Agent alive. Confirmed against
 `docs/subsystems/schedule.md`'s generated Cordis surface
 (`ScheduleService`, package `@deepseek-ai/dsh-schedule`).
 
-**`ctx.schedule` is optional composition.** The shipped Web composition
-carries no `schedule` row; it's mounted by the optional experimental
-bundle `@deepseek-ai/dsh-experimental-schedule-bundle` (enabled from the
-Plugins page, or listed in a profile's `dsh.profile.bundles`) alongside
-storage-domain and the Session controller. A plugin that must still load
-without it uses `ctx.get('schedule')` (Shape 4's optional-dependency
-pattern) rather than `inject`.
+**`ctx.schedule` is mounted by the shipped Web composition**, with the
+`ui-schedule` task page. The four model reminder tools
+(`@deepseek-ai/dsh-tool-schedule`) and the `time-context` clock reading are
+preset-owned: the `standard`, `cordis`, and `ptc` presets declare them and
+`minimal` declares neither, so a plugin running under `minimal` or a
+profile without the service should use `ctx.get('schedule')` (Shape 4's
+optional-dependency pattern) rather than `inject`.
 
 ```ts
 export const inject = ['schedule']
@@ -1281,7 +1286,11 @@ export function apply(ctx: Context) {
 
 `create(sessionId, request, signal?)` is the one plugin-callable write:
 it binds a reminder to the given Session without activating it and
-resolves to the durably stored `ScheduleRecord`. `ScheduleCreateRequest`
+resolves to the durably stored `ScheduleRecord`. A Session owned by a
+delegated child (delegation depth above zero) is refused with the
+`subagent_session` result, because delivery can never reach it; `update`
+refuses it the same way as a non-mutating result, while `delete` still
+works so a task stored before the rule remains removable. `ScheduleCreateRequest`
 requires a non-empty `prompt` (the reminder text delivered later), a
 `title` (trimmed, non-empty, at most 120 characters — a missing, blank, or
 over-long title rejects with `invalid_prompt`; it's never derived from
