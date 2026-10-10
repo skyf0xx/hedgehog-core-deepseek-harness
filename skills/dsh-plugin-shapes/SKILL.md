@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, or user-question shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, and for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`. Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, or Git-worktree shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.1-alpha.1`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.1-alpha.2`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
 dynamic-registration note and Shape 2's tool-interception waterfalls
@@ -27,13 +27,17 @@ was checked against `docs/subsystems/slots.md`,
 `docs/subsystems/sidebar-right.md`, and `docs/subsystems/client-resources.md`.
 Shape 11 was checked against `docs/subsystems/core.md`'s `ctx.agentPresets`
 section. Shape 12 was checked against `docs/subsystems/schedule.md` and
-Shape 13 against `docs/subsystems/user-questions.md`.
+Shape 13 against `docs/subsystems/user-questions.md`. Shape 14 was checked
+against `docs/subsystems/ptc-runtime.md` and `docs/subsystems/sandbox.md`.
+Shape 15 was checked against `docs/subsystems/working-directory.md` and
+Shape 16 against `docs/subsystems/worktrees.md`. The "Plugin state
+records" note was checked against `docs/subsystems/session.md`'s "Plugin
+records" section.
 `docs/subsystems/otel.md`, `docs/subsystems/credentials.md`, and
 `docs/subsystems/scope.md` were read at this tag and excluded — see "Out of scope, and why". All of the above
-plus the release notes for every version between `dsh-v0.1.7-rc.1` (this
-file's previously verified tag) and `dsh-v0.2.1-alpha.1` — `dsh-v0.1.7-rc.2`,
-`dsh-v0.2.0-rc.1`, `dsh-v0.2.0-rc.2`, `dsh-v0.2.1-alpha.1` — were read at the new tag, which
-`workspace/package.json` pins `@deepseek-ai/dsh` and
+plus the release notes for the version between `dsh-v0.2.1-alpha.1` (this
+file's previously verified tag) and `dsh-v0.2.1-alpha.2` were read at the
+new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
@@ -676,12 +680,20 @@ service, and log friction via `hedgehog friction add` if it's still thin.
 
 ## Shape 6: Subagent-spawning plugin (`ctx.subagents`)
 
-A plugin that delegates work to a subagent — either a one-shot run or a
-durable continuable child (e.g. a Claude Code or Codex backend, per the
-built-in providers the v0.1.5-alpha.1 release notes mention bumping).
-Confirmed against `docs/subsystems/subagent.md`'s generated Cordis surface.
+A plugin that delegates work to a subagent — a local child Agent or an
+external backend (e.g. a Claude Code or Codex provider). Confirmed against
+`docs/subsystems/subagent.md`'s generated Cordis surface.
 
-Two request shapes, matching the doc's "two kinds of capability" framing:
+**As of `dsh-v0.2.1-alpha.2`, `start(name, request)` and
+`startContinuable(spec)` no longer exist.** Per that doc's own framing
+("The unified activation API manages local conversations and external
+executions" / "Every backend uses `startActivation`"), both one-shot and
+durable-child delegation now go through a single overloaded
+`startActivation(spec)`, keyed off `spec.delivery` (`'parent'` notifies the
+model; `'caller'` only returns the result to the calling code) rather than
+through two differently-named methods. A plugin body written against the
+old `start`/`startContinuable` names targets a stale tag and needs this
+migration, not a workaround:
 
 ```ts
 export const inject = ['subagents']
@@ -689,57 +701,82 @@ export function apply(ctx: Context) {
   ctx.tools.register(defineTool({
     name: 'delegate-oneshot',
     // ...
-    async execute(args) {
-      const run = await ctx.subagents.start('claude-code', {
-        /* label, prompt, parent, signal, optional capabilities — see doc */
+    async execute(args, exec) {
+      const activation = await ctx.subagents.startActivation({
+        provider: 'claude-code',
+        label: 'delegate-oneshot',
+        delivery: 'caller',
+        signal: exec.signal,
+        request: {
+          prompt: [{ type: 'text', text: args.task }],
+          parent: exec.agent,
+          signal: exec.signal,
+          // optional: agentOptions, outputSchema, maxDepth, toolFilter, persona
+          // — each requires the matching SubagentCapabilities flag; see doc
+        },
       })
-      return run.result // SubagentResult, per the doc
+      const result = await activation.result // SubagentResult, per the doc
+      return result.output
     },
   }))
 }
 ```
 
-For a durable continuable child instead of a one-shot run:
+For a durable local or external child instead of a one-shot caller-only
+run, set `delivery: 'parent'` so the result also reaches the model, and use
+`activation.childId` for later messaging:
 ```ts
-// ContinuableStart's exact field names aren't restated in doc prose —
-// confirm them against packages/subagent/subagent/src before destructuring
-const started = await ctx.subagents.startContinuable({
-  /* provider, delegation request, caller cancellation */
+const activation = await ctx.subagents.startActivation({
+  provider: 'claude-code',
+  label: 'long-running-helper',
+  delivery: 'parent',
+  signal,
+  request: { prompt, parent: parentAgent, signal },
 })
 // later, from the parent Agent (targetId is the durable child session id):
-await ctx.subagents.sendMessage(parentAgent, started.childId, contentBlocks, {})
+await ctx.subagents.sendMessage(parentAgent, activation.childId, contentBlocks, { signal })
 ```
 
-Confirmed methods: `start(name, request)` (one-shot, returns
-`SubagentRun`), `startContinuable(spec)` (durable child), `sendMessage(sender,
-targetId, content, options)`, `interrupt(targetSessionId, authority)`,
-`listChildren(parentSessionId, signal?)`, `listDescendants(rootSessionId,
-signal?)`, `registerProvider(provider)` / `getProvider(name)` / `list()`
-(provider registry, distinct from the instance-level `list()` on other
-services), `drainContinuableDescendants(parents)`,
-`drainContinuableChildren(parent, childIds)`. `listDescendants` walks
-parent-owned subagent catalogs recursively in stable pre-order — each row
-carries its catalog `parentId` and root-relative `depth` — so a Session
-absent from every reachable catalog (an ordinary Session fork, and any
-subagent below one) is not discovered; an unreadable child catalog
-yields a `corrupt`/`unavailable` diagnostic and stops only that branch,
-while a root read failure or cancellation rejects the whole listing.
-Don't use it as a complete Session-tree walk; `ctx.sessionQuery`'s
-`traceSession` (Shape 9) is the ancestry/descendant tracer. A plugin that implements its
-own backend (rather than delegating to a built-in one) implements
-`SubagentProvider` and calls `registerProvider` — the doc names this
-contract but its full method-by-method shape lives in `docs/subsystems/subagent.md`'s
-"The provider contract: `SubagentProvider`" section; re-read that section
+Confirmed methods: `startActivation(spec)` (both one-shot and durable —
+overloaded; a spec carrying `childId` resolves `messageId` on the returned
+`SubagentActivation`), `resolveMaxDepth(configured?)` (resolves a
+delegation tool's depth policy against the current user setting),
+`waitForChildren(parent)` (join progressing descendants without cancelling
+them), `sendMessage(sender, targetId, content, options)`,
+`interrupt(targetSessionId, authority)`, `listChildren(parentSessionId,
+signal?)`, `listDescendants(rootSessionId, signal?)`,
+`registerProvider(provider)` / `getProvider(name)` / `list()` (provider
+registry, distinct from the instance-level `list()` on other services),
+`drainDescendants(parents)` (renamed from `drainContinuableDescendants` at
+this tag), `drainChildren(parent, childIds)` (renamed from
+`drainContinuableChildren`). `listDescendants` walks parent-owned subagent
+catalogs recursively in stable pre-order — each row carries its catalog
+`parentId` and root-relative `depth` — so a Session absent from every
+reachable catalog (an ordinary Session fork, and any subagent below one) is
+not discovered; an unreadable child catalog yields a
+`corrupt`/`unavailable` diagnostic and stops only that branch, while a root
+read failure or cancellation rejects the whole listing. Don't use it as a
+complete Session-tree walk; `ctx.sessionQuery`'s `traceSession` (Shape 9) is
+the ancestry/descendant tracer. A plugin that implements its own backend
+(rather than delegating to a built-in one) implements `SubagentProvider`
+and calls `registerProvider` — the doc names this contract but its full
+method-by-method shape lives in `docs/subsystems/subagent.md`'s "The
+provider contract: `SubagentProvider`" section; re-read that section
 directly before implementing one rather than working from this summary.
 
-**Honesty note:** `SubagentStartRequest`, `ContinuableStartSpec`, and
-`SubagentResult`'s exact fields were not transcribed into this skill —
-they're substantial doc-given types (see the source doc's "The one-shot
-start request," "Continuable children and activations," and "The terminal
-result" sections). Read those sections directly when constructing a
-request rather than guessing field names; log friction via `hedgehog
-friction add` if a needed field still isn't documented at the depth
-needed.
+**Honesty note:** `SubagentActivationSpec`, `SubagentStartRequest`,
+`SubagentCapabilities`, and `SubagentResult`'s exact fields were not fully
+transcribed into this skill — they're substantial doc-given types (see the
+source doc's "Capabilities and activation requests," "Local children and
+activations," and "Results and backend handles" sections). Read those
+sections directly when constructing a request rather than guessing field
+names; log friction via `hedgehog friction add` if a needed field still
+isn't documented at the depth needed. Custom SDK runtimes implementing
+their own `SubagentProvider` must support the completion-notification path
+this tag's "Unify subagent execution and completion notifications" release
+note describes (tools return a child id immediately; the provider's result
+settles independently) — re-read "The provider contract" section rather
+than assuming the pre-`alpha.2` callback shape still applies.
 
 **Confirmed `subagent/*` events** (per `docs/subsystems/subagent.md` as of
 `dsh-v0.1.7-rc.1`), all Shape 2's `ctx.on` pattern: `subagent/start` (emit
@@ -905,6 +942,43 @@ No mutation methods are documented on this service — treat it as read-only.
 linked doc or its source file before constructing one, and log friction
 via `hedgehog friction add` if a needed shape isn't covered at the depth
 you need.
+
+**Plugin state records — confirmed as of `dsh-v0.2.1-alpha.2`, per
+`docs/subsystems/session.md`'s "Plugin records" section.** New Session
+state-record APIs let an **experimental** plugin write and read its own
+append-only records in the Session log, independent of the `SessionEventMap`
+declaration-merge path Shape 2 documents for ordinary events. A plugin
+declares its payload shape on `PluginRecordMap`, then calls
+`appendPluginRecord()` to write and `pluginRecordOf()` to read:
+
+```ts
+declare module '@deepseek-ai/dsh' {
+  interface PluginRecordMap {
+    'plugin:my-plugin/note': { readonly text: string }
+  }
+}
+```
+
+A record's type is a `plugin:`-prefixed string (`PluginRecordType`); the
+written event is appended marked `ignorable: true` so it never participates
+in derived history or `SurfaceEventType` projection. `pluginRecordOf()`
+reads back a `PluginRecord` (`type`, `seq`, `time`, `data: unknown`) for
+stored records even when their payload's declaration has since changed —
+the record's own owner is responsible for validating `data` before trusting
+it, per the doc's own warning that a restored record can carry whatever
+JSON an earlier build wrote.
+
+**Honesty note:** this is explicitly an experimental-package mechanism —
+the doc defers the caller restriction (which plugins may call
+`appendPluginRecord`/`pluginRecordOf`), retention, and read-path specifics
+to `packages/core/session/README.md#write-experimental-plugin-records`,
+which this pass did not fetch. Don't assume any plugin can call these
+unconditionally; re-fetch that README before writing to `PluginRecordMap`,
+and log friction via `hedgehog friction add` if it doesn't resolve the
+caller-restriction question. `appendPluginRecord`'s and `pluginRecordOf`'s
+exact call signatures (which service hosts them, whether they take a
+`Session` or an `Agent`) aren't transcribed here either — confirm against
+`docs/subsystems/session.md` or its source before writing the call.
 
 ## Shape 10: Web Client slot/panel plugin (`ctx.slots`)
 
@@ -1417,6 +1491,153 @@ the shipped `ask_user_question` tool uses by default. The
 `UserQuestionProjectionView` Session projection (active/settled timed
 questions) is Client read surface, not transcribed here beyond its name.
 
+## Shape 14: PTC provider / sandbox-confinement plugin (`ctx.ptcRuntime`, `ctx.sandbox`, `ctx.sandboxPolicy`)
+
+**New to this skill as of `dsh-v0.2.1-alpha.2`.** Three more abstract-seam
+services, confirmed against `docs/subsystems/ptc-runtime.md` and
+`docs/subsystems/sandbox.md` — the same class-form pattern as Shape 4,
+applied to PTC execution and process confinement. `dsh-v0.2.1-alpha.2`'s
+release notes call out that a custom PTC composition now requires the
+`sandbox` and `sandboxPolicy` services, not just `ptcRuntime`, so a plugin
+providing its own PTC backend declares all three as class-form services (or
+`inject`s the other two if it only consumes them):
+
+```ts
+import { Service, type Context } from '@deepseek-ai/cordis'
+
+export default class MyPtcRuntime extends Service {
+  static inject = ['sandbox', 'sandboxPolicy']
+
+  constructor(ctx: Context) {
+    super(ctx, 'ptcRuntime')
+  }
+
+  resolve(request /* : PtcRunRequest */) {
+    // validate supported options, apply deployment defaults, return a PtcRunSpec
+  }
+
+  async run(spec /* : PtcRunSpec */) {
+    // execute; program/budget/substrate failures resolve in PtcRunResult,
+    // only Service Definition contract misuse rejects
+  }
+}
+```
+
+Confirmed `ctx.ptcRuntime` methods (both abstract — a provider implements
+them): `resolve(request: PtcRunRequest): PtcRunSpec`, `run(spec:
+PtcRunSpec): Promise<PtcRunResult>`. Confirmed `ctx.sandbox` method:
+`confine(argv, policy, signal?): Promise<ConfinedArgv>` — wraps an argv
+(never a shell string — a shell-shaped caller passes `['bash', '-c',
+command]`) so it executes confined under `policy`; silent unconfined
+passthrough is forbidden, so a provider must fail closed rather than return
+the original argv when it cannot enforce. Confirmed `ctx.sandboxPolicy`
+methods: `resolve(request?: SandboxPolicyRequest): SandboxExecutionPolicy`
+(the complete per-call policy — an approved explicit mode outranks the
+session's last `sandbox/mode` event, which outranks the deployment
+default) and `overrideOf(session): SandboxMode | undefined` (the session's
+logged override alone, without the deployment default applied).
+
+**Honesty note:** `PtcRunRequest`, `PtcRunSpec`, `PtcRunResult`,
+`SandboxPolicy`, `SandboxExecutionPolicy`, `SandboxPolicyRequest`, and
+`ConfinedArgv`'s exact fields are substantial doc-given types not fully
+transcribed here — read `docs/subsystems/ptc-runtime.md`'s "The run:
+request in, result out" / "Captured output and the failure taxonomy"
+sections and `docs/subsystems/sandbox.md`'s "Per-call policy" / "Wrapped
+argv and classification dialects" sections before constructing one. Only
+the first two sandbox modes can be sent to a provider — a
+`danger-full-access` consumer spawns its original argv and never calls
+`ctx.sandbox` at all; don't route that mode through `confine`. Treat this
+shape as more likely to move between tags than Shapes 1-4, the same
+caution Shapes 7/8's abstract-seam framing gets.
+
+## Shape 15: Session working-directory plugin (`ctx.workingDirectory`)
+
+**New to this skill as of `dsh-v0.2.1-alpha.2`.** A plugin that reads or
+changes a Session's active working directory — the `working_directory`
+tool's own backing service, confirmed against
+`docs/subsystems/working-directory.md`'s generated Cordis surface. A
+directory change is local to one Session: it affects relative filesystem
+operations, newly started processes, instruction discovery, skills, and
+file completion, but not existing terminals or persistent shells, and
+never moves the Session's sandbox writable root or project membership.
+
+```ts
+export const inject = ['workingDirectory']
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'cd-and-report',
+    // ...
+    async execute(args, exec) {
+      if (!exec.agent) throw new Error('needs a calling agent')
+      const dir = await ctx.workingDirectory.set(exec.agent, args.path, exec.signal)
+      return dir
+    },
+  }))
+}
+```
+
+Confirmed methods: `get(session: Session): string` (reads the logged value
+without filesystem I/O), `ensure(agent: Agent, signal?): Promise<string>`
+(validates the current directory and restores the original project if it
+disappeared), `set(agent: Agent, path: string, signal?): Promise<string>`
+(validates and durably records a requested change — `path` may be absolute
+or relative to the current directory; rejects when the target isn't an
+existing directory). Each committed change attempts to queue a model-facing
+notice through the ordinary Agent inbox (Shape 2's inbox events); a notice
+failure is only warned, never rolled back — the directory change itself
+stays committed, and the next admitted request receives the current value
+regardless. Directory context never enters the system prompt.
+
+## Shape 16: Git worktree plugin (`ctx.worktrees`)
+
+**New to this skill as of `dsh-v0.2.1-alpha.2`, and an experimental
+package** (`packages/experimental/worktree`) — confirmed against
+`docs/subsystems/worktrees.md`'s generated Cordis surface. A plugin that
+creates a retained Git worktree (a fresh branch and checkout) for an Agent
+to work in, then switches that Session's effective directory into it via
+Shape 15's `ctx.workingDirectory`:
+
+```ts
+export const inject = ['worktrees']
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'create-worktree',
+    // ...
+    async execute(args, exec) {
+      if (!exec.agent) throw new Error('needs a calling agent')
+      const worktree = await ctx.worktrees.create(exec.agent, {
+        name: args.branchName, // optional; omission generates a name
+        from: args.revision,   // optional local commit/branch/tag; omission selects HEAD
+      }, exec.signal)
+      return worktree.path
+    },
+  }))
+}
+```
+
+Confirmed method: `create(agent: Agent, request?: CreateWorktreeRequest,
+signal?: AbortSignal): Promise<CreatedWorktree>` — pins the requested local
+revision before allocating the checkout (never fetches missing objects,
+never copies staged/unstaged/untracked/ignored files from the source
+checkout), fails if the branch name or checkout path already exists, and
+only switches the calling Session's working directory after Git setup
+succeeds. `CreatedWorktree` carries `path` (canonical absolute checkout
+directory), `branch`, `baseCommit` (the resolved commit object name), and
+`repositoryRoot` (the source checkout's canonical root). The calling
+Session's existing sandbox policy must already permit writes to the
+destination and the shared Git administration directory — this shape
+doesn't grant new write permissions, it only requires them to already be
+in place.
+
+**Honesty note:** this package ships switched off by default (loaded
+through the optional "Git Worktrees" bundle in the GUI plugin manager, or
+by an explicit composition) and the doc itself frames it as experimental —
+treat the surface as more likely to shift than Shapes 1-4's, the same
+caution Shape 5's Agent Team package gets. Cancellation or failure can
+retain partial Git/filesystem artifacts with no automatic cleanup; the
+thrown error identifies their location, per the doc, but don't assume a
+plugin can clean those up itself without re-reading that section.
+
 ## Constraints
 
 - This skill catalogs shape and DSL only — it doesn't judge which shape
@@ -1438,18 +1659,18 @@ questions) is Client read surface, not transcribed here beyond its name.
   isn't confirmed in this file or in a doc you've just re-fetched. A
   plausible-sounding name is still an invented one. This includes literal
   field names on a request object this skill left as a placeholder
-  comment (Shapes 5, 6, 9, 10) — confirm those against the cited source
+  comment (Shapes 5, 6, 9, 10, 14) — confirm those against the cited source
   file, don't guess them from the prose description. For Shape 10
   specifically, a slot key must appear in `slots.md`'s "Current
   hierarchy" or the generated Client inspect catalog — don't register
   into a key invented from what "feels like" it should exist.
 - Where this skill flags a doc as thin or a signature as unconfirmed
   (Shape 4's `ctx.provide()` correction, the Agent/Inbox section's
-  import-specifier gap, Shapes 5/6/7/8/9/10/12's unrestated request-type
-  fields), stay thin rather than filling the gap — re-fetch DSH's docs
-  for the specific call, and log friction via `hedgehog friction add` if
-  the docs still don't cover it, instead of shipping a plugin against a
-  guessed API.
+  import-specifier gap, Shapes 5/6/7/8/9/10/12/14's unrestated request-type
+  fields, the Plugin state records note's caller-restriction gap), stay
+  thin rather than filling the gap — re-fetch DSH's docs for the specific
+  call, and log friction via `hedgehog friction add` if the docs still
+  don't cover it, instead of shipping a plugin against a guessed API.
 - Tool-shape plugins go through `pnpm generate:tool <name>` first; this
   skill's Shape 1 snippet is for extending or hand-checking generated
   output, not for hand-authoring a tool plugin from scratch.
@@ -1470,7 +1691,18 @@ questions) is Client read surface, not transcribed here beyond its name.
   unresolved beyond their method signatures. Shape 12 (Schedule) is
   mounted only by an optional *experimental* bundle, and Shape 13's timed
   questions sit behind an experimental, manually enabled mode — treat
-  both as more likely to move between tags than Shapes 1-4.
+  both as more likely to move between tags than Shapes 1-4. Shape 14 (PTC
+  provider / sandbox) is new as of `dsh-v0.2.1-alpha.2` and leaves its
+  request/result/policy types unresolved beyond method signatures — treat
+  it the same way. Shape 15 (Working directory) is new at the same tag and
+  is not flagged experimental in its own doc, but is still thin beyond the
+  three confirmed methods. Shape 16 (Git worktrees) is new at the same tag
+  and sits on a package its own doc calls experimental, shipped switched
+  off by default — treat it with the same caution as Shape 5. The Plugin
+  state records note (new at the same tag, between Shapes 9 and 10) is
+  explicitly experimental-package surface with an unresolved
+  caller-restriction question — treat it as thinner than any numbered
+  shape until that README is read.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
