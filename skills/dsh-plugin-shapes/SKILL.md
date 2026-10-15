@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.1-alpha.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.1-alpha.3`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
 dynamic-registration note and Shape 2's tool-interception waterfalls
@@ -35,8 +35,8 @@ records" note was checked against `docs/subsystems/session.md`'s "Plugin
 records" section.
 `docs/subsystems/otel.md`, `docs/subsystems/credentials.md`, and
 `docs/subsystems/scope.md` were read at this tag and excluded — see "Out of scope, and why". All of the above
-plus the release notes for the version between `dsh-v0.2.1-alpha.1` (this
-file's previously verified tag) and `dsh-v0.2.1-alpha.2` were read at the
+plus the release notes for the version between `dsh-v0.2.1-alpha.2` (this
+file's previously verified tag) and `dsh-v0.2.1-alpha.3` were read at the
 new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
@@ -711,7 +711,7 @@ export function apply(ctx: Context) {
           prompt: [{ type: 'text', text: args.task }],
           parent: exec.agent,
           signal: exec.signal,
-          // optional: agentOptions, outputSchema, maxDepth, toolFilter, persona
+          // optional: agentOptions, outputSchema, maxDepth, agentPreset
           // — each requires the matching SubagentCapabilities flag; see doc
         },
       })
@@ -763,6 +763,20 @@ and calls `registerProvider` — the doc names this contract but its full
 method-by-method shape lives in `docs/subsystems/subagent.md`'s "The
 provider contract: `SubagentProvider`" section; re-read that section
 directly before implementing one rather than working from this summary.
+
+**Per-child preset (`dsh-v0.2.1-alpha.3`).** `SubagentStartRequest` gained
+an optional `agentPreset?: string` — an independent Agent Preset id for the
+child; omission joins the parent's current generation. It requires a
+provider whose `SubagentCapabilities.agentPreset` is `true` and that does
+not inherit parent context. Spawn alone supports it; fork and omission
+inherit the parent's active composition. **`toolFilter` and `persona`
+(request fields and their `SubagentCapabilities` flags) no longer exist at
+this tag** — a plugin written against them must move that scoping into an
+Agent Preset (Shape 11) and select it with `agentPreset`. The explicit
+selection rules, event ordering, and historical restoration are owned by
+`packages/subagent/subagent/README.md#restoring-child-composition`, which
+the doc links but this skill did not read; re-read it before depending on
+those details.
 
 **Honesty note:** `SubagentActivationSpec`, `SubagentStartRequest`,
 `SubagentCapabilities`, and `SubagentResult`'s exact fields were not fully
@@ -835,8 +849,9 @@ pass). Rather than callback-style `onJobDone`/`onJobsChanged` listeners,
 consumers subscribe to one filtered `events` stream carrying lifecycle
 events (`registered`, `progress`, `stopping`, `removed`, `settled`) and
 `output` events (id + new ring total only, so an observer schedules its
-own `readAt`). "Ids are predictable, so authorization — not secrecy — is
-the boundary," per the doc. A job controller (something that can
+own `readAt`). "Access control relies on owner authorization, not id secrecy," per the
+doc; ids are `<kind>-<short-uuid>` (16 lowercase hex characters after the
+kind) as of `dsh-v0.2.1-alpha.3`, no longer the sequential `<kind>-N`. A job controller (something that can
 read/stop jobs for a scope of owners) calls `attachController(name)` —
 `start` refuses work for an owner no attached controller serves.
 
@@ -850,6 +865,18 @@ delivered once on the model's next `read()`. `spec.output` can instead
 list pull sources (`JobOutputSource`, the subprocess `readFrom` family)
 that the registry pumps into the ring on its own cadence — a producer
 using pull sources folds nothing into `done`.
+
+**Session lifecycle records (`dsh-v0.2.1-alpha.3`).** Owned jobs publish
+log-only `job/registered` and `job/settled` records in their original owner
+Session, paired by the globally unique `jobId`; `JobRegisteredData` carries
+`jobId`, `owner`, `kind`, `label`, `startedAt`, and an optional `toolCall`
+(`JobToolCall`: `callId` plus `rootCallId`), and `JobSettledData` adds
+`finishedAt`, `status`, `cause`, `producerReported`, and optional `detail`.
+`JobSpec` gained an optional `toolCall?: JobToolCall`. `job/settled` may
+follow `turn/end`, and app teardown can drop it, so a missing settlement
+means incomplete — never invent a finish timestamp. `producerReported` means
+`done` fulfilled with a terminal outcome and does not certify resource
+release.
 
 **Honesty note:** `JobSpec`'s exact fields (including `owner?: SessionId`
 and `output?: readonly JobOutputSource[]`), `JobView`, `JobRead`,
@@ -1043,108 +1070,115 @@ from a declared `locale` namespace, and — for a `chain` slot — the elected
 model objects stay in the `apply` closure and are projected into
 callbacks or observable sources passed through `inject`. Framework-wide
 standard props available by scope include `useSessions`,
-`useSessionStatus`, `useSessionRetainInfo`, `useWorkspaces`, `usePanelInfo`
-(every scope), and — for `session`/`session-maybe` — `sessionId`,
-`useSession`, `useProjection`, `useConversation`, `useInput`,
+`useSessionStatus`, `useSessionRetainInfo`, `useSessionAccess`,
+`useWorkspaces`, `useWorkspaceAccess`, `useRemoteAccess` (the `global`
+resource), `usePanelInfo` (every scope), and — for `session`/`session-maybe` — `sessionId`,
+`useSession`, `useProjection`, `useAccess` (the bound Session's answer), `useConversation`, `useInput`,
 `inputActions`.
 
-**The shipped hierarchy** (per `slots.md`'s "Current hierarchy") is the
-authoritative list of registrable slot keys — a plugin registers only
-into a key that appears here; guessing a plausible-sounding key is the
-same mistake Shape 2's honesty note warns against for event names:
+**The shipped Conversation hierarchy** (per `slots.md`'s "Conversation
+hierarchy", which as of `dsh-v0.2.1-alpha.3` lists only the Conversation
+paths — "unrelated shell positions are omitted") is the authoritative list
+of registrable Conversation slot keys — a plugin registers only into a key
+that appears here or in the generated catalog; guessing a plausible-sounding
+key is the same mistake Shape 2's honesty note warns against for event names.
+Bracketed names are the default React components; `Factory:` roots are
+reusable definitions that several entries call, not new Slot declarations:
 
 ```text
-root
-├─ sidebar
-│  ├─ sidebar.brand.mark
-│  ├─ sidebar.brand.name
-│  ├─ sidebar.panellist
-│  ├─ sidebar.footer.action
-│  ├─ sidebar.workspaces
-│  │  ├─ sidebar.workspaces.directoryFlow
-│  │  ├─ sidebar.workspaces.session.menu.item
-│  │  └─ sidebar.workspaces.session.row.action
-│  └─ sidebar.settings
-│     ├─ settings.trigger
-│     ├─ settings.header
-│     ├─ settings.action
-│     ├─ settings.close
-│     ├─ settings.onboarding
-│     └─ settings.section
-│        ├─ settings.general.item
-│        ├─ settings.models.provider-card
-│        ├─ settings.models.footer
-│        └─ settings.plugins.tab
-├─ main
-│  ├─ plugins.item
-│  ├─ plugins.bundle.config
-│  ├─ plugins.row.config
-│  ├─ plugins.detail.actions
-│  ├─ plugins.detail.badge
-│  ├─ plugins.detail.section
-│  ├─ plugins.add.actions
-│  └─ main.conversation
-│     ├─ conversation.session
-│     │  └─ conversation.view
-│     │     ├─ conversation.chat.node
-│     │     │  ├─ conversation.chat.assistant-actions
-│     │     │  ├─ conversation.chat.commandview
-│     │     │  ├─ conversation.chat.turnTail
-│     │     │  └─ tool.call.toolview
-│     │     │     ├─ tool.call.images
-│     │     │     └─ tool.view.cordis
-│     │     ├─ conversation.message.images
-│     │     └─ conversation.trajectory.images
-│     ├─ conversation.header
-│     │  ├─ conversation.header.leading
-│     │  └─ conversation.session.header
-│     │     ├─ conversation.session.header.lineage
-│     │     ├─ conversation.session.header.actions
-│     │     ├─ conversation.session.header.utilities
-│     │     └─ conversation.session.header.corner
-│     ├─ conversation.composer
-│     │  ├─ conversation.approval.detail
-│     │  └─ conversation.plan-review.actions
-│     ├─ conversation.composer.bar
-│     │  ├─ conversation.input.attachments
-│     │  ├─ conversation.input.permission
-│     │  ├─ conversation.input.plan
-│     │  └─ conversation.input.model
-│     ├─ conversation.input.overlay
-│     ├─ conversation.input.dock
-│     ├─ conversation.composer.dock
-│     ├─ conversation.input.left
-│     ├─ conversation.input.right
-│     ├─ conversation.hero.brand.mark
-│     ├─ conversation.hero.workspace
-│     │  └─ conversation.hero.workspace.directoryFlow
-│     └─ conversation.hero.agentPreset
-├─ rightbar
-│  └─ rightbar.session
-│     ├─ sidebar.right.pane.tab
-│     │  ├─ sidebar.right.tab.guide
-│     │  └─ sidebar.right.tab.guide.entry
-│     ├─ sidebar.right.pane.tab.title
-│     └─ sidebar.right.tab.menu.item
-├─ shell.bottom
-├─ shell.leading
-└─ shell.overlay
-   └─ shell.quota-notice
+root [AppFrame]
+└─ main[key=conversation] [ConversationPanel]
+   └─ main.conversation [ConversationRoot / ConversationMainPanel]
+      ├─ conversation.header [ConversationHeader]
+      │  ├─ conversation.header.leading
+      │  └─ conversation.session.header [ConversationSessionHeader]
+      │     ├─ conversation.session.header.lineage
+      │     ├─ conversation.session.header.actions
+      │     ├─ conversation.session.header.utilities
+      │     └─ conversation.session.header.corner
+      └─ calls Factory: conversation.content
+
+Factory: conversation.content [ConversationContent]
+├─ conversation.session [ConversationSession / DefaultConversationViews]
+│  └─ conversation.view
+│     ├─ id=chat [ChatView]
+│     │  └─ conversation.chat.flow [ChatFlow]
+│     │     └─ conversation.chat.node [ChatNodeSeat dispatch]
+│     │        ├─ key=user,steering [UserMessageNodeView]
+│     │        │  └─ calls Factory: conversation.chat.user.content
+│     │        ├─ key=assistant-step [AssistantNodeView / AssistantMarkdown]
+│     │        │  ├─ conversation.chat.message.images [MessageImages]
+│     │        │  └─ conversation.chat.reasoning.body [DefaultReasoningBody]
+│     │        │     └─ calls Factory: conversation.chat.reasoning.content
+│     │        ├─ key=tool-call [ToolCallTree]
+│     │        │  └─ tool.call.toolview
+│     │        │     └─ key=read_image [ReadImageRow / ToolRow]
+│     │        │        └─ tool.call.images [MessageImages]
+│     │        ├─ key=command-input [GoalCommandInputView]
+│     │        │  └─ calls Factory: conversation.user.text
+│     │        ├─ key=command [CommandNodeView]
+│     │        │  └─ conversation.chat.commandview
+│     │        └─ key=turn-tail [TurnTailNodeView]
+│     │           ├─ conversation.chat.turnTail
+│     │           └─ conversation.chat.assistant-actions
+│     └─ id=trajectory [TrajectoryView / TrajectoryTable]
+│        └─ conversation.trajectory.images [MessageImages]
+├─ conversation.composer
+│  ├─ conversation.approval.detail
+│  └─ conversation.plan-review.actions
+├─ conversation.composer.bar [InputBar]
+│  ├─ conversation.input.attachments
+│  ├─ conversation.input.permission
+│  ├─ conversation.input.plan
+│  ├─ conversation.input.model
+│  ├─ conversation.input.overlay
+│  ├─ conversation.composer.dock
+│  ├─ conversation.input.left
+│  └─ conversation.input.right
+├─ conversation.input.dock
+│  └─ id=queue [QueueDock]
+│     └─ calls Factory: conversation.user.text
+├─ conversation.hero.brand.mark
+├─ conversation.hero.workspace
+│  └─ conversation.hero.workspace.directoryFlow
+├─ conversation.hero.agentPreset
+└─ conversation.hero.options
+
+Factory: conversation.chat.user.content [UserContent]
+├─ conversation.chat.user.images [MessageImages]
+└─ calls Factory: conversation.user.text
+
+Factory: conversation.user.text [UserText]
+└─ conversation.user.text.node [keyed, inline]
+
+Factory: conversation.images.content [MessageImagesContent / ImageGallery]
+Factory: conversation.chat.reasoning.content [ReasoningContent / MarkdownText]
 ```
 
-`sidebar.panellist` and `main` are where a plugin registers a global
-panel; `main.conversation` is where the conversation UI itself now lives
-— this is the `dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release
-note ("插件 Agent API 调整" sibling note "Web 插件面板 API 调整"): plugins
-register global panels through `sidebar.panellist` and `main`, and the
-former root-level `conversation` slot moved to the `conversation` key
-under `main`. Re-run `pnpm run gen-client-catalog`'s generated Client
-inspect catalog (or `cordis_inspect what:"client"` against a running
-instance) for the exhaustive, current contract of any key — cardinality,
-scope, owner props, current occupants, declaration owner, replacement
-risk. The tree above is transcribed verbatim from `slots.md` at the
-pinned tag; the generated catalog remains the authority for each key's
-contract.
+The sidebar, settings, plugin-page, right-sidebar, and `shell.*` branches
+that earlier tags listed in this tree (`sidebar.panellist`,
+`sidebar.workspaces.*`, `settings.*`, `plugins.*`, `rightbar.session`,
+`sidebar.right.pane.tab`, `shell.bottom`/`shell.leading`/`shell.overlay`)
+are no longer enumerated in `slots.md`; the generated Client inspect catalog
+now "covers all shell branches" and is the only exhaustive source for them.
+Treat a key from those branches as unconfirmed until `cordis_inspect
+what:"client"` or `pnpm run gen-client-catalog` shows it.
+
+Global panels register through `sidebar.panellist` and `main` (the
+`dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release note moved the
+former root-level `conversation` slot to the `conversation` key under
+`main`); at `dsh-v0.2.1-alpha.3` `slots.md` shows `root [AppFrame]` →
+`main[key=conversation]` → `main.conversation` as the Conversation path's
+start and defers every other branch to the generated catalog. Run
+`pnpm run gen-client-catalog`'s generated Client inspect catalog (or
+`cordis_inspect what:"client"` against a running instance) for the
+exhaustive, current contract of any key — cardinality, scope, owner props,
+current occupants, declaration owner, replacement risk. The Conversation tree
+above is transcribed from `slots.md` at the pinned tag; the generated
+catalog remains the authority for each key's contract. All four image Slots
+default to `MessageImages`, and the `conversation.user.text` Factory is
+shared by user content, Queue, and Goal (its `inline: true` keyed Slot
+renders span anchors, not block wrappers).
 
 **Right-Sidebar tab types** are a further, more specific registration on
 top of the general slot system, confirmed against
@@ -1493,7 +1527,7 @@ questions) is Client read surface, not transcribed here beyond its name.
 
 ## Shape 14: PTC provider / sandbox-confinement plugin (`ctx.ptcRuntime`, `ctx.sandbox`, `ctx.sandboxPolicy`)
 
-**New to this skill as of `dsh-v0.2.1-alpha.2`.** Three more abstract-seam
+**New to this skill as of `dsh-v0.2.1-alpha.2` (updated at `alpha.3`).** Three more abstract-seam
 services, confirmed against `docs/subsystems/ptc-runtime.md` and
 `docs/subsystems/sandbox.md` — the same class-form pattern as Shape 4,
 applied to PTC execution and process confinement. `dsh-v0.2.1-alpha.2`'s
@@ -1536,6 +1570,18 @@ methods: `resolve(request?: SandboxPolicyRequest): SandboxExecutionPolicy`
 session's last `sandbox/mode` event, which outranks the deployment
 default) and `overrideOf(session): SandboxMode | undefined` (the session's
 logged override alone, without the deployment default applied).
+
+**In-memory state (`dsh-v0.2.1-alpha.3`).** `PtcRunRequest` gained an
+optional `stateOwner?: object`: omission requests a fresh one-shot
+environment, and a consumer passing an owner must `await
+runtime.release(owner)` when that owner ends (cleanup failures reject that
+call). Stateless providers ignore it, and retained state is never durable or
+part of the Session format. A provider's `programFormat` now distinguishes
+an async function body (top-level `await`/`return`) from a REPL (top-level
+declarations, `await`, and a final expression whose value is the completion
+value). The persistent Node provider's reset/recovery behavior lives in
+`packages/ptc-runtime/ptc-runtime-node/README.md#persistent-repl`, which
+this skill did not read.
 
 **Honesty note:** `PtcRunRequest`, `PtcRunSpec`, `PtcRunResult`,
 `SandboxPolicy`, `SandboxExecutionPolicy`, `SandboxPolicyRequest`, and
@@ -1661,7 +1707,7 @@ plugin can clean those up itself without re-reading that section.
   field names on a request object this skill left as a placeholder
   comment (Shapes 5, 6, 9, 10, 14) — confirm those against the cited source
   file, don't guess them from the prose description. For Shape 10
-  specifically, a slot key must appear in `slots.md`'s "Current
+  specifically, a slot key must appear in `slots.md`'s "Conversation
   hierarchy" or the generated Client inspect catalog — don't register
   into a key invented from what "feels like" it should exist.
 - Where this skill flags a doc as thin or a signature as unconfirmed
