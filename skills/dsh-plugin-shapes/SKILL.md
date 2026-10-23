@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.1-alpha.3`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.1-rc.2`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
 dynamic-registration note and Shape 2's tool-interception waterfalls
@@ -33,11 +33,12 @@ Shape 15 was checked against `docs/subsystems/working-directory.md` and
 Shape 16 against `docs/subsystems/worktrees.md`. The "Plugin state
 records" note was checked against `docs/subsystems/session.md`'s "Plugin
 records" section.
-`docs/subsystems/otel.md`, `docs/subsystems/credentials.md`, and
-`docs/subsystems/scope.md` were read at this tag and excluded — see "Out of scope, and why". All of the above
-plus the release notes for the version between `dsh-v0.2.1-alpha.2` (this
-file's previously verified tag) and `dsh-v0.2.1-alpha.3` were read at the
-new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
+`docs/subsystems/otel.md`, `docs/subsystems/credentials.md`,
+`docs/subsystems/scope.md`, and `docs/subsystems/boot.md`'s "Market
+records" section were read at this tag and excluded — see "Out of scope, and why". All of the above
+plus the release notes for every version between `dsh-v0.2.1-alpha.3`
+(this file's previously verified tag) and `dsh-v0.2.1-rc.2` (`alpha.4`,
+`alpha.5`, `rc.1`, `rc.2`) were read at the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
@@ -61,6 +62,14 @@ excluded at this tag:
   a `ctx.*` service or plugin-authoring DSL change. A plugin author's Shape
   1-9 code is unaffected; only which tools a given profile preloads by
   default changed.
+- **`ctx.pluginMarket` (`docs/subsystems/boot.md`'s "Market records",
+  `docs/user/guide/plugin-market.md`)** — new at `dsh-v0.2.1-alpha.4`: the
+  experimental Custom plugin markets bundle's index reader, whose methods
+  are `@Remote` calls the Plugins page's Discover tab makes; installation
+  still goes through the plugin manager. Publishing a market is a static
+  JSON index file, not plugin code. The one part that touches a plugin's
+  own package — `engines.dsh` — is the bundle manifest's concern, which the
+  tool-plugin generator's `package.json` template now declares.
 - **MCP client pagination-cursor rejection** (v0.1.5-alpha.2 bug fix) —
   internal robustness of `dsh-mcp-client` consuming a misbehaving external
   MCP server, not a `ctx.*` surface a DSH plugin author calls.
@@ -1077,7 +1086,7 @@ resource), `usePanelInfo` (every scope), and — for `session`/`session-maybe` �
 `inputActions`.
 
 **The shipped Conversation hierarchy** (per `slots.md`'s "Conversation
-hierarchy", which as of `dsh-v0.2.1-alpha.3` lists only the Conversation
+hierarchy", which as of `dsh-v0.2.1-rc.2` lists only the Conversation
 paths — "unrelated shell positions are omitted") is the authoritative list
 of registrable Conversation slot keys — a plugin registers only into a key
 that appears here or in the generated catalog; guessing a plausible-sounding
@@ -1131,6 +1140,7 @@ Factory: conversation.content [ConversationContent]
 │  ├─ conversation.input.permission
 │  ├─ conversation.input.plan
 │  ├─ conversation.input.model
+│  │  └─ conversation.input.model.label
 │  ├─ conversation.input.overlay
 │  ├─ conversation.composer.dock
 │  ├─ conversation.input.left
@@ -1167,7 +1177,7 @@ what:"client"` or `pnpm run gen-client-catalog` shows it.
 Global panels register through `sidebar.panellist` and `main` (the
 `dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release note moved the
 former root-level `conversation` slot to the `conversation` key under
-`main`); at `dsh-v0.2.1-alpha.3` `slots.md` shows `root [AppFrame]` →
+`main`); at `dsh-v0.2.1-rc.2` `slots.md` shows `root [AppFrame]` →
 `main[key=conversation]` → `main.conversation` as the Conversation path's
 start and defers every other branch to the generated catalog. Run
 `pnpm run gen-client-catalog`'s generated Client inspect catalog (or
