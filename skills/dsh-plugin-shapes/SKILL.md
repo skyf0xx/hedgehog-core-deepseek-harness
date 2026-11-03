@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.1-rc.2`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.1-rc.5`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
 dynamic-registration note and Shape 2's tool-interception waterfalls
@@ -24,7 +24,9 @@ section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
 `docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
 `docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
 was checked against `docs/subsystems/slots.md`,
-`docs/subsystems/sidebar-right.md`, and `docs/subsystems/client-resources.md`.
+`docs/subsystems/sidebar-right.md`, and `docs/subsystems/client-resources.md`
+(plus `docs/upgrade-guide/v0.2.1-rc.4/reasoning-body-props/guide.md` for the
+reasoning-body Slot's text fields).
 Shape 11 was checked against `docs/subsystems/core.md`'s `ctx.agentPresets`
 section. Shape 12 was checked against `docs/subsystems/schedule.md` and
 Shape 13 against `docs/subsystems/user-questions.md`. Shape 14 was checked
@@ -37,8 +39,8 @@ records" section.
 `docs/subsystems/scope.md`, and `docs/subsystems/boot.md`'s "Market
 records" section were read at this tag and excluded — see "Out of scope, and why". All of the above
 plus the release notes for every version between `dsh-v0.2.1-alpha.3`
-(this file's previously verified tag) and `dsh-v0.2.1-rc.2` (`alpha.4`,
-`alpha.5`, `rc.1`, `rc.2`) were read at the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
+(this file's previously verified tag) and `dsh-v0.2.1-rc.5` (`alpha.4`,
+`alpha.5`, `rc.1`, `rc.2`, `rc.3`, `rc.4`, `rc.5`) were read at the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
 `@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
@@ -1086,7 +1088,7 @@ resource), `usePanelInfo` (every scope), and — for `session`/`session-maybe` �
 `inputActions`.
 
 **The shipped Conversation hierarchy** (per `slots.md`'s "Conversation
-hierarchy", which as of `dsh-v0.2.1-rc.2` lists only the Conversation
+hierarchy", which as of `dsh-v0.2.1-rc.5` lists only the Conversation
 paths — "unrelated shell positions are omitted") is the authoritative list
 of registrable Conversation slot keys — a plugin registers only into a key
 that appears here or in the generated catalog; guessing a plausible-sounding
@@ -1104,6 +1106,7 @@ root [AppFrame]
       │     ├─ conversation.session.header.lineage
       │     ├─ conversation.session.header.actions
       │     ├─ conversation.session.header.utilities
+      │     ├─ conversation.session.header.views.actions
       │     └─ conversation.session.header.corner
       └─ calls Factory: conversation.content
 
@@ -1165,6 +1168,29 @@ Factory: conversation.images.content [MessageImagesContent / ImageGallery]
 Factory: conversation.chat.reasoning.content [ReasoningContent / MarkdownText]
 ```
 
+**More-menu action lists (`dsh-v0.2.1-rc.3`).** `slots.md` documents three
+root-scoped `list` slots that supply the rows of the Web Client's More menus:
+`sidebar.panellist.actions` (after the panel rows),
+`conversation.session.header.views.actions` (after the View tabs), and
+`sidebar.right.tab.guide.actions` (after the right-sidebar guide cards). A
+region draws its More button and menu only while its list has registrations,
+and passes each customizable entry its pin state, `onOpen`, `onPinnedChange`,
+and `onDismiss`; Panel and View entries also carry an optional `active` flag
+for the current selection, independent of pin state. The doc also lists
+`plugins.add.actions` (root-scoped `MenuItemButton` rows in the Add plugin
+menu; the owner supplies `onDismiss()`). The shipped rows come from
+`packages/client/ui-entry-customization/README.md`, which this skill did not
+read; read it before relying on an entry's exact field shape.
+
+**Reasoning body text fields (`dsh-v0.2.1-rc.4`).** A contribution to
+`conversation.chat.reasoning.body` receives the model output in `rawText`;
+`text` now carries Chat's prepared display text, and `running` is unchanged.
+Keep reading `text` for ordinary rendering and translation, read `rawText`
+only when the full model output is needed, and pass the selected `text` (or
+its translation) to the `conversation.chat.reasoning.content` Factory without
+repeating Chat's display processing. The Factory still accepts `text`,
+`running`, and optional `labels`.
+
 The sidebar, settings, plugin-page, right-sidebar, and `shell.*` branches
 that earlier tags listed in this tree (`sidebar.panellist`,
 `sidebar.workspaces.*`, `settings.*`, `plugins.*`, `rightbar.session`,
@@ -1177,7 +1203,7 @@ what:"client"` or `pnpm run gen-client-catalog` shows it.
 Global panels register through `sidebar.panellist` and `main` (the
 `dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release note moved the
 former root-level `conversation` slot to the `conversation` key under
-`main`); at `dsh-v0.2.1-rc.2` `slots.md` shows `root [AppFrame]` →
+`main`); at `dsh-v0.2.1-rc.5` `slots.md` shows `root [AppFrame]` →
 `main[key=conversation]` → `main.conversation` as the Conversation path's
 start and defers every other branch to the generated catalog. Run
 `pnpm run gen-client-catalog`'s generated Client inspect catalog (or
