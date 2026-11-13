@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, or Git-worktree shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, Git-worktree, MCP-server-registration, or Session-projection shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API and subagent names, for per-Session model selection through `agent.model`, for conditional tool activation, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", "agent.model", "model selection", "ctx.mcpManager", "register an MCP server", "ctx.sessionProjections", "session projection", "LlmRequestPurposeMap", "when condition", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,35 +13,57 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.1-rc.5`.** Shapes 1-4 and the
+**Verified against DSH tag `dsh-v0.2.2-rc.3`.** Shapes 1-4 and the
 "Every plugin body" structural forms were checked against
 `docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
-dynamic-registration note and Shape 2's tool-interception waterfalls
-checked against `docs/subsystems/tools.md` (and, for the model-side
-`toolUpdate` mode, `docs/subsystems/llm-streaming.md`). The Agent/Inbox
-section and Shapes 5-9 were checked against `docs/subsystems/core.md`,
-`docs/subsystems/agent-team.md`, `docs/subsystems/subagent.md`,
-`docs/subsystems/jobs.md`, `docs/subsystems/workflow.md`,
-`docs/subsystems/webhook.md`, `docs/subsystems/session-query.md`. Shape 10
-was checked against `docs/subsystems/slots.md`,
-`docs/subsystems/sidebar-right.md`, and `docs/subsystems/client-resources.md`
-(plus `docs/upgrade-guide/v0.2.1-rc.4/reasoning-body-props/guide.md` for the
-reasoning-body Slot's text fields).
-Shape 11 was checked against `docs/subsystems/core.md`'s `ctx.agentPresets`
-section. Shape 12 was checked against `docs/subsystems/schedule.md` and
+dynamic-registration and conditional-activation notes and Shape 2's
+tool-interception waterfalls checked against `docs/subsystems/tools.md`
+(and, for the model-side `toolUpdate` mode, the deprecated `agent/request`
+hook, and `LlmRequestPurposeMap`, `docs/subsystems/llm-streaming.md`). The
+Agent/Inbox section and Shapes 5-9 were checked against
+`docs/subsystems/core.md`, `docs/subsystems/agent-team.md`,
+`docs/subsystems/subagent.md`, `docs/subsystems/jobs.md`,
+`docs/subsystems/workflow.md`, `docs/subsystems/webhook.md`,
+`docs/subsystems/session-query.md`. Shape 10 was checked against
+`docs/subsystems/slots.md`, `docs/subsystems/sidebar-right.md`, and
+`docs/subsystems/client-resources.md` (plus
+`docs/upgrade-guide/v0.2.1-rc.4/reasoning-body-props/guide.md` for the
+reasoning-body Slot's text fields, and
+`docs/upgrade-guide/v0.2.2-alpha.2/context-menu-target/guide.md`,
+`css-anchored-menus/guide.md`, and
+`v0.2.2-alpha.3/chat-process-activity-context/guide.md` for the Client UI
+migrations). Shape 11 was checked against `docs/subsystems/core.md`'s
+`ctx.agentPresets` section. Shape 12 was checked against
+`docs/subsystems/schedule.md` and
+`docs/upgrade-guide/v0.2.2-alpha.2/schedule-remote-host-tasks/guide.md`, and
 Shape 13 against `docs/subsystems/user-questions.md`. Shape 14 was checked
 against `docs/subsystems/ptc-runtime.md` and `docs/subsystems/sandbox.md`.
 Shape 15 was checked against `docs/subsystems/working-directory.md` and
-Shape 16 against `docs/subsystems/worktrees.md`. The "Plugin state
-records" note was checked against `docs/subsystems/session.md`'s "Plugin
-records" section.
+Shape 16 against `docs/subsystems/worktrees.md`. Shape 17 was checked
+against `docs/subsystems/mcp.md` and Shape 18 against
+`docs/subsystems/session-projection.md` (plus
+`docs/upgrade-guide/v0.2.1-rc.2/session-projection-handles/guide.md` and
+`docs/upgrade-guide/v0.2.2-alpha.2/projection-snapshot-scope/guide.md`).
+The "Plugin state records" note was checked against
+`docs/subsystems/session.md`'s "Plugin records" section, and Shape 6's
+naming rules against `docs/upgrade-guide/v0.2.2-alpha.3/subagent-names/guide.md`.
 `docs/subsystems/otel.md`, `docs/subsystems/credentials.md`,
-`docs/subsystems/scope.md`, and `docs/subsystems/boot.md`'s "Market
-records" section were read at this tag and excluded — see "Out of scope, and why". All of the above
-plus the release notes for every version between `dsh-v0.2.1-alpha.3`
-(this file's previously verified tag) and `dsh-v0.2.1-rc.5` (`alpha.4`,
-`alpha.5`, `rc.1`, `rc.2`, `rc.3`, `rc.4`, `rc.5`) were read at the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
-`@deepseek-ai/dsh-tools` to. This is the one owning statement of which DSH
+`docs/subsystems/scope.md`, `docs/subsystems/boot.md`'s "Market records"
+section and `ctx.actionCards` section, and `docs/subsystems/session.md`'s
+"Session-log upload exclusions" section were read at this tag and
+excluded — see "Out of scope, and why". All of the above plus the release
+notes for every version between `dsh-v0.2.1-rc.5` (this file's previously
+verified tag) and `dsh-v0.2.2-rc.3` (`v0.2.2-alpha.2`, `alpha.3`, `rc.1`,
+`rc.2`, `rc.3`) and every `docs/upgrade-guide/v0.2.2-*` guide were read at
+the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
+`@deepseek-ai/dsh-tools` to.
+
+A subset of `docs/` ships inside the pinned package at
+`workspace/node_modules/@deepseek-ai/dsh/docs/` after `pnpm install`
+(`subsystems/tools.md`, `slots.md`, `session-projection.md`, and
+`user/develop/framework/events.md` among them; `subsystems/mcp.md` is not).
+Read a cited doc there first; read one missing there from the pinned tag on
+GitHub. This is the one owning statement of which DSH
 revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
 true as of that tag. A re-pin to a newer `rc` or stable tag needs this
@@ -65,13 +87,28 @@ excluded at this tag:
   1-9 code is unaffected; only which tools a given profile preloads by
   default changed.
 - **`ctx.pluginMarket` (`docs/subsystems/boot.md`'s "Market records",
-  `docs/user/guide/plugin-market.md`)** — new at `dsh-v0.2.1-alpha.4`: the
-  experimental Custom plugin markets bundle's index reader, whose methods
-  are `@Remote` calls the Plugins page's Discover tab makes; installation
-  still goes through the plugin manager. Publishing a market is a static
-  JSON index file, not plugin code. The one part that touches a plugin's
-  own package — `engines.dsh` — is the bundle manifest's concern, which the
-  tool-plugin generator's `package.json` template now declares.
+  `docs/user/guide/plugin-market.md`)** — the Custom plugin indexes bundle's
+  index reader, whose methods are `@Remote` calls the Plugins page's
+  Discover tab makes; installation still goes through the plugin manager.
+  Publishing an index is a static JSON index file, not plugin code. The one
+  part that touches a plugin's own package — `engines.dsh` — is the bundle
+  manifest's concern, which the tool-plugin generator's `package.json`
+  template declares.
+- **`ctx.actionCards` (`docs/subsystems/boot.md`)** — the experimental
+  action-card service behind Personalized recommendations: a kind registry
+  (`register(kind)`), a Session-log decision writer (`record(agent,
+  decision)`), a reader (`view(session)`), and the `@Remote` `act` the Web
+  card calls. `ActionCardKind`'s skill, details-schema, verb, and handler
+  fields are owned by `packages/experimental/action-cards/README.md`, which
+  this skill did not read. A plugin that needs its own card kind reads that
+  README first and logs friction via `hedgehog friction add` if it does not
+  resolve the kind's shape.
+- **`ctx.sessionLogDeepSeek.registerExclusion()` (`docs/subsystems/session.md`'s
+  "Session-log upload exclusions")** — a synchronous predicate over
+  `{ sessionId, purpose? }` that keeps a request's Session log out of the
+  DeepSeek log-contribution upload. It governs telemetry upload eligibility,
+  not plugin behavior; a plugin whose auxiliary requests must never be
+  uploaded registers one and keeps its predicate side-effect-free.
 - **MCP client pagination-cursor rejection** (v0.1.5-alpha.2 bug fix) —
   internal robustness of `dsh-mcp-client` consuming a misbehaving external
   MCP server, not a `ctx.*` surface a DSH plugin author calls.
@@ -97,31 +134,39 @@ excluded at this tag:
 - **`ctx.authorization`, `ctx.credentials`, `ctx.credentialsController`,
   `ctx.deepseekAccount` (`docs/subsystems/credentials.md`)** — the Host's
   credential-resolution and DeepSeek Platform account seams (sign-in,
-  balance, bonus notifications, token rejection). These are abstract
-  provider seams the Host composition fills and `@Remote` controllers the
-  Web app's settings UI calls; no doc-given pattern exists for a feature
-  plugin registering against them.
+  balance, account notifications, token rejection). `ctx.deepseekAccount`
+  is a concrete service owning browser login, stored credentials, and the
+  `account` Remote namespace; the others are provider seams the Host
+  composition fills and `@Remote` controllers the Web app's settings UI
+  calls. No doc-given pattern exists for a feature plugin registering
+  against them.
 - **LLM adapter authoring (`docs/subsystems/llm-streaming.md`,
   `docs/user/develop/practice/llm-adapter.md`)** — including the
   `toolUpdate` model-info field behind `dsh-v0.1.7-rc.2`'s "dynamic tool
-  additions without invalidating KV Cache" release note. Writing an
+  additions without invalidating KV Cache" release note, model badges, and
+  the pi-ai-only `llm-pi-ai/request-headers` waterfall (dynamic request
+  headers from Session identity and purpose, owned by
+  `packages/llm/llm-pi-ai/README.md#request-headers`). Writing an
   `LlmAdapter` is its own practice guide with its own abstract class;
   this skill catalogs only its effect on tool plugins (Shape 1's
-  dynamic-registration note).
+  dynamic-registration note) and the `LlmRequestPurposeMap` declaration a
+  plugin making auxiliary requests needs (Shape 2).
 - **The Plugin Manager page and runtime dependency resolution/unloading**
   (installing, configuring, and live enabling/disabling plugins from the
   Web app; Creator mode installing persistent plugins through Plugin
-  Manager rather than its own dynamic definition/execution tools; Auto
-  review enabled from the Plugins page, Inspector shipped as a separately
-  installed plugin rather than by default; the `dsh` command bundled with
-  macOS/Windows Desktop for plugin management) — this
+  Manager rather than its own dynamic definition/execution tools, with its
+  guidance in the single `dsh-doc` skill; Auto review enabled from the
+  Plugins page, Inspector shipped as a separately installed plugin rather
+  than by default; the `dsh` command bundled with macOS/Windows Desktop for
+  plugin management; `BundleInfo.update` and third-party bundle updates;
+  official bundle lists exported by `@deepseek-ai/dsh-official-bundles`) — this
   is the Web app's end-user plugin install/enable/disable surface and
   Creator mode's own scratch-authoring workflow, the same bundle/profile-
   composition category as the `sdk-minimal` item above, not a `ctx.*`
   service or plugin-authoring DSL change. No doc in this skill's citation
   list documents a Cordis surface for it. A
-  plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and Shape
-  1-13 DSL are unaffected by how the Web app or Creator mode installs it
+  plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and shape
+  DSL are unaffected by how the Web app or Creator mode installs it
   at runtime.
 - **`ctx.agentPresets` is now catalogued as Shape 11**, below — see that
   section for what's confirmed and what's still thin.
@@ -259,6 +304,32 @@ complete list on every request. Nothing in the tool plugin's own body
 changes either way — don't try to opt into or detect this from the
 plugin; it's the adapter's and Session's concern.
 
+**Conditional activation (`dsh-v0.2.2-rc.3`, `tools.md`'s "Conditional
+activation").** `ctx.tools` is `ToolsService`, and `register(definition,
+options?)` takes an optional `ToolRegistrationOptions` whose `when(context)`
+decides, once per proposed step, whether the tool is declared to the model
+and callable in that step's batch (PTC subcalls included). `context` is a
+`ToolActivationContext`: `agent`, the step's captured `modelSelection`
+(`provider`, `model`, optional `reasoningEffort`), and a `signal` an async
+condition must observe. Omitting `when` enables the tool; returning `false`
+hides it from declarations and dispatch; a rejection fails step
+preparation, recorded on the turn as `TOOL_ACTIVATION_FAILED`. A condition
+must not mutate registrations or start tool work:
+
+```ts
+ctx.tools.register(defineTool({ /* ... */ }), {
+  when: ({ modelSelection }) => modelSelection.provider === 'deepseek-official',
+})
+```
+
+A call outside a model step (no `ResolvedToolSet`) cannot reach a
+conditional registration — `ctx.tools.executable()` excludes it — so keep a
+tool unconditional when other plugins call it programmatically. A tool body
+whose composition or call lacks a required Agent, service, or open turn
+throws `ToolContextUnavailableError` (`TOOL_CONTEXT_UNAVAILABLE`); a thrown
+`HarnessError` records its `name` and `code` as the result's structured
+`error`.
+
 ## Shape 2: Hook plugin
 
 A plugin that observes or intercepts framework activity rather than
@@ -266,8 +337,17 @@ exposing a new callable. Registers on a Cordis event or a durable
 session-event type via `ctx.on`, inside function-form `apply`.
 
 **Confirmed Cordis-level events** (per `docs/user/develop/framework/events.md`
-at the tag pinned above): `agent/pre-step`, `agent/request`,
-`agent/request-error`, `tools/result`, `session/event`.
+at the tag pinned above): `agent/pre-step`, `agent/request-error`,
+`tools/result`, `session/event`. `agent/pre-step`'s payload carries the
+step's captured `modelSelection`, retained across retries.
+
+**`agent/request` is deprecated.** It is gone from the generated `core.md`
+catalog and `events.md`'s list; `llm-streaming.md` keeps it only for
+existing listeners, which may change request controls such as sampling but
+must preserve provider, model, and explicit reasoning effort. Don't write a
+new `agent/request` listener. A plugin that changes the model records a
+Session selection with `agent.model.select(...)` before the next step (see
+the Agent-passing section below).
 
 **Confirmed as of `dsh-v0.1.7-rc.1`, per `docs/subsystems/core.md`:**
 `agent/created` (serial mode) — fires once an entered agent is ready for
@@ -333,6 +413,23 @@ declare module '@deepseek-ai/cordis' {
 }
 ```
 
+The same declaration-merge pattern types a plugin's auxiliary LLM request
+purpose. `GenerateOptions.purpose` accepts only keys of
+`LlmRequestPurposeMap` (`@deepseek-ai/dsh-llm/types`, one of `core.md`'s six
+canonical merge maps); the shared package declares none, so a plugin that
+calls the LLM for its own purpose declares it, and one reusing `compaction`
+or `session-title` type-imports `@deepseek-ai/dsh-compaction-basic` or
+`@deepseek-ai/dsh-session-title-llm`:
+```ts
+import type {} from '@deepseek-ai/dsh-llm/types'
+
+declare module '@deepseek-ai/dsh-llm/types' {
+  interface LlmRequestPurposeMap {
+    'my-plugin-purpose': true
+  }
+}
+```
+
 A concrete, doc-given example hooking a real framework event:
 ```ts
 export function apply(ctx: Context) {
@@ -345,11 +442,17 @@ export function apply(ctx: Context) {
 **Tool-interception waterfalls — confirmed per `docs/subsystems/tools.md`.**
 `events.md` lists only the framework-level events above; the tool
 pipeline's own events live in `tools.md`'s generated `tools/*` section.
-`ctx.tools.execute()` runs each call through `tools/pre-execute` →
-registered monotonic guards → `tools/execute` → content projection →
-`tools/post-execute` → optional `finalizeContent` → `tools/result`. All
-four hook points below are scope-filtered: an agent-scoped listener sees
-only that agent's calls.
+`ctx.tools.execute(input: ToolBatchInput)` delegates a raw model-call batch
+to the nearest scoped `ToolExecutor` (native or PTC, contributed through
+`ctx.tools.setExecutor()`). The built-in executors pass each parsed call to
+the shared `ToolExecutionPipeline`, which runs it through
+`tools/pre-execute` → registered monotonic guards → `tools/execute` →
+content projection → `tools/post-execute` → optional `finalizeContent` →
+`tools/result`. All four hook points below are scope-filtered: an
+agent-scoped listener sees only that agent's calls. A custom executor
+owns its own execution, so these hooks fire only where it uses the shared
+pipeline; implementing a `ToolExecutor` is executor authoring, not a hook
+plugin — read `tools.md`'s "Executors and raw call batches" first.
 
 - **`tools/pre-execute`** (waterfall) — `(exec: ToolExecution, next) =>
   Promise<PreToolDecision>`. Allow, deny, cancel, or ask before dispatch;
@@ -389,7 +492,11 @@ returns `allowed-once`; a missing approval channel, a non-grant, or an
 agent-less call becomes a denial. Async gates must observe `exec.signal`.
 `PostToolDecision` is `{ kind: 'accept'; content?; additionalContexts? } |
 { kind: 'accept'; value; additionalContexts? } | { kind: 'block'; feedback;
-additionalContexts? }`.
+info?: ToolErrorInfo; additionalContexts? }` — `info` is the blocked
+result's structured error identity. A guard registered with
+`ctx.tools.guard(guard)` returns `undefined`, a denial reason string, or a
+`ToolGuardDenial` (`{ reason, info? }`) whose `info` becomes the failed
+result's structured error; it can never allow.
 
 **Honesty note:** don't invoke an extension-point string that isn't in
 the confirmed lists above or in a doc you've just re-fetched; if a
@@ -398,7 +505,7 @@ in DSH's own docs (or a signal the event doesn't exist yet), not
 something to fill by guessing a plausible-sounding name. Log it with
 `hedgehog friction add` and pick a confirmed event or a different shape
 instead. `ToolExecution`'s full field list (`callId`, `rootCallId`,
-`name`, `arguments`, `agent`, `signal`, …) is in `tools.md`'s "Execution"
+`name`, `arguments`, `agent`, `toolSet`, `signal`, …) is in `tools.md`'s "Execution"
 section — read it there rather than assuming a field exists.
 
 ## Shape 3: UI plugin
@@ -542,8 +649,8 @@ export function apply(ctx: Context) {
     name: 'spawn-worker',
     async execute() {
       const handle = await ctx.agents.create({
-        /* shared identity, optional live parent, session seed/metadata,
-           agent options — see CreateAgentOptions in core.md */
+        /* shared identity, session seed/metadata, agent options, setup —
+           see CreateAgentOptions in core.md */
       })
       return handle.agent.id
     },
@@ -557,16 +664,20 @@ returning a handle the owner can tear down), `resume(options:
 ResumeAgentOptions): Promise<AgentHandle>` (load a persisted session and
 resume an agent on it — rejects if persistence isn't configured), `get(id:
 SessionId): Agent | undefined` (look up a live agent by id), `list():
-Agent[]` (every live agent, registration order), `isOwnedBy(id, owner):
-boolean` (whether a live agent was created through one exact parent's
-scoped context). `ctx.agentLoop` (`AgentLoop`, a separate confirmed
+Agent[]` (every live agent, registration order), and
+`turnBoundaryOf(session): TurnBoundaryProjection` (the Session's recorded
+`openTurnStartSeq`, `lastStepStartSeq`, `lastStepBoundary`, and `lastTurn`,
+without a live Agent; don't mutate the returned value).
+`CreateAgentOptions` carries no parent field: the caller Context owns the
+returned handle's lifetime, and subagent ancestry belongs to Shape 6's
+subagent tree. `ctx.agentLoop` (`AgentLoop`, a separate confirmed
 service — `inject = ['agentLoop']`) is the concrete factory these calls
 delegate to, with its own `create(id, options, meta)`, `createAgent(ownerCtx,
 options)`, and `resume(ownerCtx, options)` — reach for `ctx.agents.create`/
 `resume` first; use `ctx.agentLoop` directly only when a plugin is
 implementing agent creation itself rather than requesting it.
 
-**Honesty note:** `register(agent)`, `enter(agent, owner)`, and
+**Honesty note:** `register(agent)`, `enter(agent)`, and
 `announce(agent, source, signal?)` are also confirmed methods on
 `ctx.agents`, but the doc frames them as an "advanced ordered-lifecycle
 primitive" for a plugin implementing its own `AgentFactory` via
@@ -585,10 +696,33 @@ separate service) owns the default model selection independently of any
 Host or transport: `currentSelection(): ModelSelection` and `async
 saveSelection(next: ModelSelection): Promise<void>`. Saves commit in
 submission order; a failed save rejects its own caller without blocking
-later saves. `ModelSelection`'s
-exact fields (provider, model, optional reasoning selection) aren't
-transcribed here — confirm them against the doc or source before
-constructing one.
+later saves. `ModelSelection` is `{ provider: string; model: string;
+reasoningEffort?: ReasoningEffortId }` (`core.md`).
+
+**`agent.model` — per-Session model selection (`dsh-v0.2.2-rc.3`).** Each
+`Agent` exposes a readonly `model: Model` with two confirmed methods:
+`current(): Readonly<ModelSelection> | undefined` (the choice the next step
+uses — a recorded choice, then the last request, then the Agent's live
+`options`; it neither starts a step nor changes a prepared one) and
+`select(selection: Readonly<ModelSelection>): void` (records a complete
+choice as a `model/selection` event for future steps; omitted effort
+follows adapter defaults; an equal recorded choice is a no-op). The caller
+owns availability and capability validation. This replaces switching routes
+from the deprecated `agent/request` hook:
+```ts
+ctx.on('agent/pre-step', async (payload, next) => {
+  const { agent, modelSelection } = payload
+  if (modelSelection.model !== 'deepseek-v4-flash' && shouldDowngrade(agent)) {
+    agent.model.select({ provider: modelSelection.provider, model: 'deepseek-v4-flash' })
+  }
+  return next()
+})
+```
+A selection recorded during `agent/pre-step` applies to the following step,
+not the step already captured in `modelSelection`. The `modelSelection`
+Session projection (`lastUsed`, `next`) is its client view; the Agent model
+API's selection-precedence and resume rules are owned by
+`packages/core/agent/README.md`, which this skill did not read.
 
 **`agent.inbox` — the `Inbox` type, not a runtime class.** Per the same
 release's notes ("Inbox API 调整" / "Inbox API changes"): "Make `Inbox` a
@@ -641,13 +775,18 @@ section for `followup`/`steer`/`inject`/`send`; what Shape 3 still leaves
 unconfirmed is only `ConversationNodeDefinition`, the Web Client
 contribution point.
 
-## Shape 5: Agent Team plugin (`ctx.agentTeams`)
+## Shape 5: Agent Team task-board plugin (`ctx.agentTeams`)
 
-A plugin that builds or coordinates a multi-agent team — spawning
-teammates, passing messages between them, and managing a shared task DAG.
-Confirmed against `docs/subsystems/agent-team.md`'s generated Cordis
-surface. This is an **experimental** package (`packages/experimental/agent-team`
-per the doc) — treat the surface as more likely to shift than Shapes 1-4.
+A plugin that reads or changes a subagent tree's shared Team task board —
+creating tasks, assigning and completing them, and switching Team mode for
+a root Session. Confirmed against `docs/subsystems/agent-team.md`'s
+generated Cordis surface (`TeamService`, `packages/team/agent-team`). Team
+membership is the ordinary subagent tree (Shape 6): teammates are named
+subagents, and members exchange messages through
+`ctx.subagents.sendMessage`. The Team service no longer spawns, messages,
+interrupts, or rosters members, and task changes do not wake idle agents
+or end inbox waits — send an explicit message when an agent must act on a
+task update.
 
 Every method takes the acting `Agent` as an explicit first argument (the
 pattern described above, not `ctx.agent`):
@@ -655,39 +794,40 @@ pattern described above, not `ctx.agent`):
 ```ts
 export const inject = ['agentTeams']
 export function apply(ctx: Context) {
-  ctx.on('tools/result', async (exec, result) => {
-    const agent = ctx.agents.currentInitiator()
-    if (!agent) return
-    const membership = ctx.agentTeams.tryMembership(agent)
-    if (!membership) return // not a Team member
-
-    const roster = ctx.agentTeams.listMembers(agent)
-    await ctx.agentTeams.sendMessage(agent, {
-      /* target name, content, pre-queue cancellation — see doc for exact request shape */
-    })
-  })
+  ctx.tools.register(defineTool({
+    name: 'file-followup-task',
+    // ...
+    async execute(args, exec) {
+      if (!exec.agent || !ctx.agentTeams.isEnabled(exec.agent)) {
+        throw new Error('Team mode is off for this Session tree')
+      }
+      const task = await ctx.agentTeams.createTask(exec.agent, {
+        /* task text, blockers, advisory write scopes — see CreateTeamTaskRequest */
+      }, exec.signal)
+      return task.id
+    },
+  }))
 }
 ```
 
-Confirmed methods: `membership(agent)`, `listMembers(agent)`,
-`spawnTeammate(caller, request)`, `sendMessage(caller, request)`,
-`createTask(caller, request)`, `getTask(caller, id)`, `listTasks(caller)`,
-`updateTask(caller, request)`, `waitForChange(caller, timeoutMs, signal)`,
-`interrupt(caller, targetName)`, `tryMembership(agent)` (the non-throwing
-form — returns `undefined` for a non-Team subagent instead of throwing).
-The exact field shapes of `SpawnTeammateRequest`, `SendTeamMessageRequest`,
-`CreateTeamTaskRequest`, and `UpdateTeamTaskRequest` are declared in
-`packages/experimental/agent-team/src/types.ts` per the doc, not restated
-in prose there — read that source file (or re-fetch the doc's full type
-block) before constructing one of these request objects rather than
-guessing field names.
+Confirmed methods: `isEnabled(caller)` (the Team selection shared by the
+caller's subagent tree), `setEnabled(agent, enabled, signal?)` (`@Remote`;
+only the live root may call it, the selection takes effect before
+persistence is awaited, and it neither stops children nor deletes tasks),
+`createTask(caller, request, signal?)`, `getTask(caller, id)` (includes a
+deleted tombstone), `listTasks(caller)`, and `updateTask(caller, request,
+signal?)` (compare-and-set against an expected revision). Both writes can
+throw `TEAM_TASK_PERSISTENCE_UNCONFIRMED` when the task is visible but its
+durability is unknown — read it back before retrying. New Sessions default
+to Team mode off. `TeamTaskView` carries `ownerId` and, for owners named at
+assignment, `ownerName`; display `ownerName ?? ownerId`.
 
-**Honesty note:** the doc explicitly defers "operation, authorization,
-recovery, and limit behavior" to the package README
-(`packages/experimental/agent-team/README.md`), which this pass did not
-fetch. Don't assume a call succeeds unconditionally or invent a rejection
-shape — re-fetch that README before writing error handling around this
-service, and log friction via `hedgehog friction add` if it's still thin.
+**Honesty note:** the exact field shapes of `CreateTeamTaskRequest` and
+`UpdateTeamTaskRequest` are declared in `packages/team/agent-team/src/types.ts`
+and not restated in the doc; task operations and limits are owned by
+`packages/team/agent-team/README.md`, which this skill did not read. Read
+both before constructing a request or writing error handling, and log
+friction via `hedgehog friction add` if they're still thin.
 
 ## Shape 6: Subagent-spawning plugin (`ctx.subagents`)
 
@@ -695,16 +835,16 @@ A plugin that delegates work to a subagent — a local child Agent or an
 external backend (e.g. a Claude Code or Codex provider). Confirmed against
 `docs/subsystems/subagent.md`'s generated Cordis surface.
 
-**As of `dsh-v0.2.1-alpha.2`, `start(name, request)` and
-`startContinuable(spec)` no longer exist.** Per that doc's own framing
-("The unified activation API manages local conversations and external
-executions" / "Every backend uses `startActivation`"), both one-shot and
-durable-child delegation now go through a single overloaded
+Both one-shot and durable-child delegation go through one overloaded
 `startActivation(spec)`, keyed off `spec.delivery` (`'parent'` notifies the
-model; `'caller'` only returns the result to the calling code) rather than
-through two differently-named methods. A plugin body written against the
-old `start`/`startContinuable` names targets a stale tag and needs this
-migration, not a workaround:
+model; `'caller'` only returns the result to the calling code).
+`SubagentActivationSpec` extends `SubagentStartRequest` (minus its `label`
+and `signal`), so the task fields — `prompt`, `parent`, and the optional
+`cwd`, `agentPreset`, `agentOptions`, `outputSchema`, `maxDepth` — sit
+directly on the spec beside `provider`, `label`, `delivery`, `signal`, an
+optional reserved `childId`, and an optional `name`. There is no nested
+`request` object; a plugin written with `startActivation({ ..., request: {
+prompt, parent } })` targets a stale tag:
 
 ```ts
 export const inject = ['subagents']
@@ -713,20 +853,18 @@ export function apply(ctx: Context) {
     name: 'delegate-oneshot',
     // ...
     async execute(args, exec) {
+      if (!exec.agent) throw new Error('delegate-oneshot needs a calling agent')
       const activation = await ctx.subagents.startActivation({
         provider: 'claude-code',
         label: 'delegate-oneshot',
         delivery: 'caller',
         signal: exec.signal,
-        request: {
-          prompt: [{ type: 'text', text: args.task }],
-          parent: exec.agent,
-          signal: exec.signal,
-          // optional: agentOptions, outputSchema, maxDepth, agentPreset
-          // — each requires the matching SubagentCapabilities flag; see doc
-        },
+        prompt: [{ type: 'text', text: args.task }],
+        parent: exec.agent,
+        // optional: name, cwd, agentOptions, outputSchema, maxDepth, agentPreset
+        // — each capability field requires the matching SubagentCapabilities flag; see doc
       })
-      const result = await activation.result // SubagentResult, per the doc
+      const result = await activation.result // SubagentResult: output (ContentBlock[]), optional structured
       return result.output
     },
   }))
@@ -740,86 +878,104 @@ run, set `delivery: 'parent'` so the result also reaches the model, and use
 const activation = await ctx.subagents.startActivation({
   provider: 'claude-code',
   label: 'long-running-helper',
+  name: 'helper',
   delivery: 'parent',
   signal,
-  request: { prompt, parent: parentAgent, signal },
+  prompt,
+  parent: parentAgent,
 })
-// later, from the parent Agent (targetId is the durable child session id):
+// activation.name is the model-facing name ("helper", or "reviewer/helper" under a named creator)
 await ctx.subagents.sendMessage(parentAgent, activation.childId, contentBlocks, { signal })
 ```
 
-Confirmed methods: `startActivation(spec)` (both one-shot and durable —
-overloaded; a spec carrying `childId` resolves `messageId` on the returned
-`SubagentActivation`), `resolveMaxDepth(configured?)` (resolves a
-delegation tool's depth policy against the current user setting),
-`waitForChildren(parent)` (join progressing descendants without cancelling
-them), `sendMessage(sender, targetId, content, options)`,
-`interrupt(targetSessionId, authority)`, `listChildren(parentSessionId,
-signal?)`, `listDescendants(rootSessionId, signal?)`,
-`registerProvider(provider)` / `getProvider(name)` / `list()` (provider
-registry, distinct from the instance-level `list()` on other services),
-`drainDescendants(parents)` (renamed from `drainContinuableDescendants` at
-this tag), `drainChildren(parent, childIds)` (renamed from
-`drainContinuableChildren`). `listDescendants` walks parent-owned subagent
+**Subagent tree and names (`dsh-v0.2.2-alpha.3`).** Creation ancestry,
+runtime ownership, and messaging belong to the subagent tree rooted at the
+Session that started it; an ordinary Session fork starts an independent
+tree. A requested `name` is 1–32 lower-case letters, digits, or hyphens
+starting with a letter, unique among the parent's children, and never
+`lead` (the root's name); omission selects the first free `agent-N`.
+`SubagentActivation.name` is the slash-separated path from the root when
+every creator below the root is named, otherwise the child Session id.
+Session ids stay the only identity for routing, authorization, persistence,
+and task ownership — names are model-facing references only, and resolving
+one grants no authority.
+
+Confirmed methods: `startActivation(spec)` (a spec carrying `childId`
+resolves `messageId` on the returned `SubagentActivation`, whose
+`dispose()` releases only that activation), `resolveMaxDepth(configured?)`
+(resolves a delegation tool's depth policy against the current user
+setting), `rootOf(caller)` (the live tree root), `namesOf(agent)`
+(`SubagentMemberNames`: `self`, and `parent` for a descendant),
+`resolveName(caller, name, signal)` (Session id for `lead`, a full name, or
+a Session id; an unmatched slash path throws `AGENT_NAME_NOT_FOUND`),
+`waitForTreeWork(root)` (join progressing tree work for a root),
+`sendMessage(sender, targetId, content, options)` (any root or continuable
+member of the sender's tree, across branches; a running target receives it
+at its next step, an idle one starts a turn, a cold one resumes),
+`interrupt(targetSessionId, authority)` (authority `{ kind: 'user' }` — a
+trusted host operation — or `{ kind: 'ancestor', agent }`),
+`listDescendants(rootSessionId, signal?)`, `drainDescendants(parents)`
+(whole-tree teardown for the given live roots), and
+`registerProvider(provider)` / `getProvider(name)`. `listChildren`,
+`waitForChildren`, `drainChildren`, and the provider-name `list()` don't
+exist at this tag; a parent's direct children are
+`observation.projections?.values.subagentCatalog` on
+`ctx.sessionQuery.observeSession(parentSessionId, { signal })` (release the
+observation with `using`). `listDescendants` walks parent-owned subagent
 catalogs recursively in stable pre-order — each row carries its catalog
-`parentId` and root-relative `depth` — so a Session absent from every
-reachable catalog (an ordinary Session fork, and any subagent below one) is
-not discovered; an unreadable child catalog yields a
-`corrupt`/`unavailable` diagnostic and stops only that branch, while a root
-read failure or cancellation rejects the whole listing. Don't use it as a
-complete Session-tree walk; `ctx.sessionQuery`'s `traceSession` (Shape 9) is
-the ancestry/descendant tracer. A plugin that implements its own backend
+`parentId`, root-relative `depth`, and, when every link from the root is
+named, its full name as `path` — so a Session absent from every reachable
+catalog (an ordinary Session fork, and any subagent below one) is not
+discovered; an unreadable child catalog yields a `corrupt`/`unavailable`
+diagnostic and stops only that branch, while a root read failure or
+cancellation rejects the whole listing. Don't use it as a complete
+Session-tree walk; `ctx.sessionQuery`'s `traceSession` (Shape 9) is the
+ancestry/descendant tracer. A plugin that implements its own backend
 (rather than delegating to a built-in one) implements `SubagentProvider`
 and calls `registerProvider` — the doc names this contract but its full
 method-by-method shape lives in `docs/subsystems/subagent.md`'s "The
 provider contract: `SubagentProvider`" section; re-read that section
 directly before implementing one rather than working from this summary.
 
-**Per-child preset (`dsh-v0.2.1-alpha.3`).** `SubagentStartRequest` gained
-an optional `agentPreset?: string` — an independent Agent Preset id for the
-child; omission joins the parent's current generation. It requires a
-provider whose `SubagentCapabilities.agentPreset` is `true` and that does
-not inherit parent context. Spawn alone supports it; fork and omission
-inherit the parent's active composition. **`toolFilter` and `persona`
-(request fields and their `SubagentCapabilities` flags) no longer exist at
-this tag** — a plugin written against them must move that scoping into an
-Agent Preset (Shape 11) and select it with `agentPreset`. The explicit
-selection rules, event ordering, and historical restoration are owned by
+**Per-child preset.** `agentPreset?: string` selects an independent Agent
+Preset id for the child; omission joins the parent's current generation.
+It requires a provider whose `SubagentCapabilities.agentPreset` is `true`
+and that does not inherit parent context. Spawn alone supports it; fork and
+omission inherit the parent's active composition. `toolFilter` and
+`persona` don't exist as request fields or `SubagentCapabilities` flags —
+move that scoping into an Agent Preset (Shape 11) and select it with
+`agentPreset`. The explicit selection rules, event ordering, and historical
+restoration are owned by
 `packages/subagent/subagent/README.md#restoring-child-composition`, which
 the doc links but this skill did not read; re-read it before depending on
 those details.
 
-**Honesty note:** `SubagentActivationSpec`, `SubagentStartRequest`,
-`SubagentCapabilities`, and `SubagentResult`'s exact fields were not fully
-transcribed into this skill — they're substantial doc-given types (see the
-source doc's "Capabilities and activation requests," "Local children and
-activations," and "Results and backend handles" sections). Read those
-sections directly when constructing a request rather than guessing field
-names; log friction via `hedgehog friction add` if a needed field still
-isn't documented at the depth needed. Custom SDK runtimes implementing
-their own `SubagentProvider` must support the completion-notification path
-this tag's "Unify subagent execution and completion notifications" release
-note describes (tools return a child id immediately; the provider's result
-settles independently) — re-read "The provider contract" section rather
-than assuming the pre-`alpha.2` callback shape still applies.
+**Honesty note:** `SubagentStartRequest` and `SubagentCapabilities` are
+transcribed in the doc's "Capabilities and activation requests" section;
+`SubagentResult`'s fields beyond `output` and `structured` live in its
+"Results and backend handles" section. Read those sections directly when
+constructing a request rather than guessing field names; log friction via
+`hedgehog friction add` if a needed field still isn't documented at the
+depth needed. A custom `SubagentProvider` must support the
+completion-notification path (tools return a child id immediately; the
+provider's result settles independently) — re-read "The provider contract"
+section rather than assuming an older callback shape applies.
 
-**Confirmed `subagent/*` events** (per `docs/subsystems/subagent.md` as of
-`dsh-v0.1.7-rc.1`), all Shape 2's `ctx.on` pattern: `subagent/start` (emit
-— a provider established a published child; for in-process providers
-`ctx.agents.get(info.id)` resolves during this notification),
-`subagent/end` (emit — a published child settled, paired with
-`subagent/start`), `subagent/provider-added` and `subagent/provider-removed`
-(emit — a provider entered or left the registry). Scope-filtered dispatch
-on `start`/`end` keys the carrier by the delegating parent, so a
-parent-scoped listener sees only its own delegations.
+**Confirmed `subagent/*` events** (per `docs/subsystems/subagent.md`), all
+Shape 2's `ctx.on` pattern: `subagent/start` (emit — a provider established
+a published child; for in-process providers `ctx.agents.get(info.id)`
+resolves during this notification), `subagent/end` (emit — a published
+child settled, paired with `subagent/start`), `subagent/provider-added` and
+`subagent/provider-removed` (emit — a provider entered or left the
+registry). Both lifecycle payloads carry the durable direct creator's
+`parentSessionId`. Scope-filtered dispatch on `start`/`end` keys the
+carrier by the subagent tree root, so a root-scoped listener sees every
+activation in its tree, not only its direct delegations.
 
-**Confirmed `ctx.subagentModelSelection`** (`SubagentModelSelectionConfig`,
-same doc) — a singleton settings owner read when delegation tools are
-composed for a Session, with one confirmed method: `current()` returns
-`SubagentModelSelectionSettings` (enabled state and allowed routes). Its
-exact settings shape isn't transcribed here; read
-`packages/subagent/tool-subagent/src/model-selection-settings.ts` before
-depending on a specific field.
+**`ctx.subagentModelSelection`** (`SubagentModelSelectionConfig`, same doc)
+is a Host settings owner that records Session authorization before the
+first model request. Its generated section lists no plugin-callable method
+at this tag; delegation tools read its settings themselves.
 
 ## Shape 7: Background job plugin (`ctx.jobs`)
 
@@ -970,8 +1126,11 @@ across a cancellable multi-session observation), `filterEvents(...)`
 (semantic event search with provider-independent filters), `readSurface(...)`
 (one session's complete current model surface), `traceSession(...)` and
 `traceEvent(...)` (ancestry/descendant and event-replacement tracing), and
-`readEvent(...)` (one event plus a bounded raw-log context window) — exact
-parameter shapes for all of these, old and new, are not transcribed here.
+`readEvent(...)` (one event plus a bounded raw-log context window), and
+`inspectSession<T>(sessionId, read, signal?)` (runs a synchronous,
+non-mutating `read(session)` getter against the live or prepared cut
+without attaching or resuming a cold Session) — exact parameter shapes for
+the rest are not transcribed here.
 No mutation methods are documented on this service — treat it as read-only.
 
 **Honesty note:** neither service's full request/filter type
@@ -1063,13 +1222,23 @@ export function apply(ctx: Context): void {
 priority winner renders), `list` (cells addressed by required `id`,
 ordered by `order` then registration order), `keyed` (the owner dispatches
 an `entryKey`; the matching cell renders), `chain` (each entry supplies
-`select(owner)`; the first non-null result in priority order renders).
+`select(owner)`; the first non-null result in priority order renders),
+`hoc` (layers addressed by required `id` and optional `key` nest around the
+owner's content, lowest `order` outermost; each receives the owner props
+plus the next inner layer as `children` and renders it at most once — a
+layer that omits it replaces everything inside. A layer without `key` is a
+wildcard; one with `key` applies only when the owner dispatches that
+`entryKey`. A layer that wraps `children` must not create a box of its own
+— use `display: contents` — and a crashed layer reports its error and
+renders its `children`; see `slots.md`'s "Hoc layers").
 **Scope** (also fixed per slot): `root` (one instance), `session-maybe`
 (inherits the surrounding Provider binding but stays renderable without
 one; Session values optional), `session` (requires a resolved surrounding
 Provider binding, receiving definite Session values). `priority` is a
-shadowing rank for `single`/`list`/`keyed` and an election order for
-`chain` — lower values run or render first.
+shadowing rank for `single`/`list`/`keyed`/`hoc` and an election order for
+`chain` — lower values run or render first. An additive contribution picks
+a fresh list or hoc `id`, or an unoccupied keyed `key`; reusing a shipped
+cell replaces its presentation.
 
 A registered component receives: owner values and standard scope values
 (`PropsRuntime<K>`), authorized child renderers for any slot it declares
@@ -1088,7 +1257,7 @@ resource), `usePanelInfo` (every scope), and — for `session`/`session-maybe` �
 `inputActions`.
 
 **The shipped Conversation hierarchy** (per `slots.md`'s "Conversation
-hierarchy", which as of `dsh-v0.2.1-rc.5` lists only the Conversation
+hierarchy", which as of `dsh-v0.2.2-rc.3` lists only the Conversation
 paths — "unrelated shell positions are omitted") is the authoritative list
 of registrable Conversation slot keys — a plugin registers only into a key
 that appears here or in the generated catalog; guessing a plausible-sounding
@@ -1114,9 +1283,14 @@ Factory: conversation.content [ConversationContent]
 ├─ conversation.session [ConversationSession / DefaultConversationViews]
 │  └─ conversation.view
 │     ├─ id=chat [ChatView]
+│     │  ├─ conversation.chat.text-interaction [list]
+│     │  ├─ conversation.chat.markdown.fence [hoc, keyed by fence language]
 │     │  └─ conversation.chat.flow [ChatFlow]
 │     │     └─ conversation.chat.node [ChatNodeSeat dispatch]
-│     │        ├─ key=user,steering [UserMessageNodeView]
+│     │        ├─ key=user [UserMessageNodeView]
+│     │        │  ├─ conversation.chat.user.before [chain]
+│     │        │  └─ calls Factory: conversation.chat.user.content
+│     │        ├─ key=steering [UserMessageNodeView]
 │     │        │  └─ calls Factory: conversation.chat.user.content
 │     │        ├─ key=assistant-step [AssistantNodeView / AssistantMarkdown]
 │     │        │  ├─ conversation.chat.message.images [MessageImages]
@@ -1151,6 +1325,8 @@ Factory: conversation.content [ConversationContent]
 ├─ conversation.input.dock
 │  └─ id=queue [QueueDock]
 │     └─ calls Factory: conversation.user.text
+├─ conversation.hero.frame [hoc]
+│  └─ id=pixel-whale [PixelWhale]
 ├─ conversation.hero.brand.mark
 ├─ conversation.hero.workspace
 │  └─ conversation.hero.workspace.directoryFlow
@@ -1168,6 +1344,16 @@ Factory: conversation.images.content [MessageImagesContent / ImageGallery]
 Factory: conversation.chat.reasoning.content [ReasoningContent / MarkdownText]
 ```
 
+**Chat extension slots (`dsh-v0.2.2-rc.3`).** The tree above adds
+`conversation.chat.markdown.fence` (a `hoc` slot keyed by fenced code-block
+language — a layer registered with `key: '<language>'` wraps only that
+language's code blocks, and a block with no matching layer renders as an
+ordinary code block), `conversation.chat.text-interaction` (a `list`), and
+`conversation.chat.user.before` (a `chain` under the `key=user` node, which
+is now dispatched separately from `key=steering`); `conversation.hero.frame`
+is a `hoc` around the empty-Session hero. Each key's owner props are in the
+generated catalog, not `slots.md` — read them there before registering.
+
 **More-menu action lists (`dsh-v0.2.1-rc.3`).** `slots.md` documents three
 root-scoped `list` slots that supply the rows of the Web Client's More menus:
 `sidebar.panellist.actions` (after the panel rows),
@@ -1181,6 +1367,37 @@ for the current selection, independent of pin state. The doc also lists
 menu; the owner supplies `onDismiss()`). The shipped rows come from
 `packages/client/ui-entry-customization/README.md`, which this skill did not
 read; read it before relying on an entry's exact field shape.
+
+**Panel icons, settings icons, and context menus (`dsh-v0.2.2-rc.3`).**
+The root-scoped `sidebar.panel.icon` Factory owns the `sidebar.panellist`
+list and renders each registered panel icon by `id`, `size`, and `active`
+for both sidebar rows and More entries. Settings pages can supply their own
+navigation icons; the extension points are owned by
+`packages/client/ui-settings/README.md#filling-the-settings-slots`, which
+this skill did not read. The context-menu plugin
+(`@deepseek-ai/dsh-client-ui-context-menu`) contributes `useContextMenu`
+to every scope. Its target type is `ContextMenuTarget` (`MenuTarget` has no
+alias), workspace and sidebar injections are `contextMenuTarget` /
+`useContextMenuTarget`, and an action icon is `{ key, src? }` rendered
+through the root-scoped keyed `contextMenu.icon` Slot — register the icon
+component under that key with `ctx.slots.inject('contextMenu.icon', ...)`
+and `ctx.slots.register()`. Custom Web compositions that need Session
+header menu actions mount the context-menu plugin.
+
+**Client UI primitives (`dsh-v0.2.2-alpha.2`/`alpha.3`).**
+`@deepseek-ai/dsh-client-ui-primitives` has no `useAnchoredPosition` or
+`AnchoredPositionOptions`: a custom panel anchors through CSS Anchor
+Positioning (a unique `anchor-name` on the trigger, the same
+`position-anchor` on the panel), and `Menu` takes `anchorRef` (an external
+trigger element) or `anchorPoint` (`{ x, y }` in client-viewport
+coordinates) instead of `getAnchorRect`. `ProcessActivity` from
+`@deepseek-ai/dsh-client-ui-chat/client` has a `context` member, and
+`ProcessActivitySummary.running` is `RunningProcessActivity` (which
+excludes it) — an exhaustive `switch` or `Record<ProcessActivity, …>` needs
+a `context` branch. On macOS Desktop, a custom overlay covering a draggable
+header declares its region (`data-window-drag-exclude` on its visible
+viewport, or `data-window-drag-controls` on a control container); interactive
+controls elsewhere no longer get `no-drag` automatically.
 
 **Reasoning body text fields (`dsh-v0.2.1-rc.4`).** A contribution to
 `conversation.chat.reasoning.body` receives the model output in `rawText`;
@@ -1203,7 +1420,7 @@ what:"client"` or `pnpm run gen-client-catalog` shows it.
 Global panels register through `sidebar.panellist` and `main` (the
 `dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release note moved the
 former root-level `conversation` slot to the `conversation` key under
-`main`); at `dsh-v0.2.1-rc.5` `slots.md` shows `root [AppFrame]` →
+`main`); at `dsh-v0.2.2-rc.3` `slots.md` shows `root [AppFrame]` →
 `main[key=conversation]` → `main.conversation` as the Conversation path's
 start and defers every other branch to the generated catalog. Run
 `pnpm run gen-client-catalog`'s generated Client inspect catalog (or
@@ -1251,9 +1468,13 @@ export function apply(ctx: Context): void {
 calls to open content: `openResource(address, options?)` for a
 `dsh-resource://` address, `openTab(kind, options?)` for a page tab; both
 throw for an address/kind nothing claims (a wiring mistake, not a user
-error). `close`, `active`, `isExpanded`, `toggleExpanded`, `focus`,
-`split`, `float`, and `dock` are the other confirmed methods, all
-requiring a mounted Session surface for writes.
+error). `openResource` also takes a `destination` option (`'sidebar'` or
+`'float'`) that settles the resource in the active docked pane or a new
+floating panel, revealing or moving an existing copy. `close`, `hide`
+(close a floating tab or collapse its docked column), `active`,
+`isExpanded`, `toggleExpanded`, `focus`, `split`, `float`, and `dock` are
+the other confirmed methods, all requiring a mounted Session surface for
+writes. Layouts are saved per Session in browser-local state.
 
 For an action that must run against the page the user was looking at —
 a keyboard command, a deferred menu action — capture the target first and
@@ -1273,6 +1494,10 @@ returned disposer releases the registration without removing a newer
 body's commands, and the tab lifetime also releases it.
 `tab.refreshShortcut` (optional) supplies the effective refresh
 shortcut-catalog entry for page controls.
+
+`useTabInfo()`'s `panel` carries `id` and the required `isFloating:
+boolean`; both update when a tab moves between hosts, while `tab.id` stays
+the same.
 
 **Honesty note:** the tab-type `definition`'s exact TypeScript shape
 beyond the fields listed above, the full `SidebarRightResourceParamsMap`/
@@ -1380,8 +1605,10 @@ revision the given Agent joined; no match returns an empty list),
 `recompose(ctx, id)` (rebind a blank Agent — the caller owns the
 blank-session check), `select(agent, agentPreset)` (select a preset before
 a session's first turn), `acquireScope(id?)` (a disposable revision lease
-for cold transcript presentation), and `compositionInventory()` (plugin
-rows without creating an Agent).
+for cold transcript presentation), `compositionInventory()` (plugin
+rows without creating an Agent), and `presetForSession(session): string |
+null` (the preset recorded for a Session, including one no longer in the
+roster).
 
 **Honesty note:** `PresetDefinition`'s exact field shape is still not
 spelled out in prose in `core.md` — the doc's JSDoc for `register()` calls
@@ -1393,20 +1620,18 @@ shape either. Likewise `AgentPreset`, `AgentPresetRoster`,
 `AgentPresetDocument`, and `AgentPresetComposition` are named as return
 types but not expanded here.
 
-## Shape 12: Scheduled-reminder plugin (`ctx.schedule`)
+## Shape 12: Scheduled-task plugin (`ctx.schedule`)
 
-A plugin that schedules a future follow-up message into a Session — a
-one-shot reminder, a fixed-rate check, or a wall-clock recurrence —
-without keeping the Session's Agent alive. Confirmed against
-`docs/subsystems/schedule.md`'s generated Cordis surface
-(`ScheduleService`, package `@deepseek-ai/dsh-schedule`).
+A plugin that schedules a future message — a one-shot reminder, a
+fixed-rate check, or a calendar recurrence — delivered to an existing
+Session or to a Session the Host creates, without keeping any Agent alive.
+Confirmed against `docs/subsystems/schedule.md`'s generated Cordis surface
+(`ScheduleService`, package `@deepseek-ai/dsh-schedule`) and
+`docs/upgrade-guide/v0.2.2-alpha.2/schedule-remote-host-tasks/guide.md`.
 
-**`ctx.schedule` is mounted by the shipped Web composition**, with the
-`ui-schedule` task page. The four model reminder tools
-(`@deepseek-ai/dsh-tool-schedule`) and the `time-context` clock reading are
-preset-owned: the `standard`, `cordis`, and `ptc` presets declare them and
-`minimal` declares neither, so a plugin running under `minimal` or a
-profile without the service should use `ctx.get('schedule')` (Shape 4's
+Schedule manages **Host tasks by id**: one management API addresses every
+task on the Host, regardless of which Session created it. A profile that
+lacks the service should be handled with `ctx.get('schedule')` (Shape 4's
 optional-dependency pattern) rather than `inject`.
 
 ```ts
@@ -1417,68 +1642,77 @@ export function apply(ctx: Context) {
     // ...
     async execute(args, exec) {
       if (!exec.agent) throw new Error('remind-later needs a calling agent')
-      const record = await ctx.schedule.create(exec.agent.id, {
-        prompt: 'Re-run the flaky integration suite and report.',
+      const task = await ctx.schedule.create({
         title: 'Flaky suite re-run',
-        after_seconds: 1800,
-      }, exec.signal)
-      return record.id
+        prompt: 'Re-run the flaky integration suite and report.',
+        timing: { kind: 'after', after_seconds: 1800 },
+        target: { kind: 'session', sessionId: exec.agent.id },
+      }, exec.agent.id, exec.signal)
+      return task.id
     },
   }))
 }
 ```
 
-`create(sessionId, request, signal?)` is the one plugin-callable write:
-it binds a reminder to the given Session without activating it and
-resolves to the durably stored `ScheduleRecord`. A Session owned by a
-delegated child (delegation depth above zero) is refused with the
-`subagent_session` result, because delivery can never reach it; `update`
-refuses it the same way as a non-mutating result, while `delete` still
-works so a task stored before the rule remains removable. `ScheduleCreateRequest`
-requires a non-empty `prompt` (the reminder text delivered later), a
-`title` (trimmed, non-empty, at most 120 characters — a missing, blank, or
-over-long title rejects with `invalid_prompt`; it's never derived from
-the prompt), and **exactly one** of six mutually exclusive selectors:
-`after_seconds` (positive safe-integer delay), `at` (a strictly future
-offset-bearing RFC 3339 string, or `{ date, time, time_zone }`),
-`every_seconds` (safe integer ≥ 60, aligned to creation time — elapsed
-time, not wall-clock), `daily` (`{ time: 'HH:mm:ss', time_zone }`),
-`weekly` (`{ time, time_zone, weekdays }`, ISO weekdays), or `cron`
-(`{ expression, time_zone }`, five-field Vixie cron). Wall-clock selectors
-require an explicit IANA zone; Schedule never reads browser, Session,
-process, or model time-zone context. Cancellation is checked before
-persistence begins and does not roll back a write already in flight.
+`create(request, actorSessionId?, signal?)` stores one task and resolves to
+its `ScheduleCatalogEntry`; `actorSessionId` records the acting Agent's
+Session as involved (omit it for a human caller). `ScheduleCreateRequest`
+is `{ title, prompt, timing, target? }`: `title` is non-empty after trimming
+and at most 120 characters, `prompt` is non-empty, and `timing` is a typed
+`ScheduleTiming` discriminated on `kind` — `{ kind: 'after', after_seconds
+}`, `{ kind: 'at', at }`, `{ kind: 'every', every_seconds }` (≥ 60),
+`{ kind: 'daily', daily: { time, time_zone } }`, `{ kind: 'weekly', weekly:
+{ time, time_zone, weekdays } }`, `{ kind: 'cron', cron: { expression,
+time_zone } }`, or `{ kind: 'rrule', rrule }` (one `DTSTART` line and one
+`RRULE` line). Wall-clock kinds require an explicit IANA zone. `target` is
+`{ kind: 'session', sessionId }` (an existing Session that is not a
+delegated child), `{ kind: 'new_once', create? }` (the default: the first
+delivery creates one Session, later deliveries reuse it), or `{ kind:
+'new', create? }` (a fresh Session per delivery); `create` takes optional
+`cwd` and `agentPreset`. `new` and `new_once` need the embedding's Session
+creation provider — SDK compositions without it reject them with
+`invalid_rule`. Invalid input throws `ScheduleInputError`. Cancellation is
+checked before the durable write begins and does not roll back a write
+already in flight.
 
-The remaining methods are `@Remote`-decorated management surface the Web
-task views call — `list({ sessionId })` (a Session's active tasks),
-`catalog()` (every Host task with its Session binding), `history(...)`
-(saved deliveries, newest first, `limit` 1-100), `delete({ ... })`, and
-`update({ ... })` (replace name, instruction, or timing in place; not
-offered for `after`). A plugin may call them, but a plugin whose job is
-"show or edit the task list" is duplicating shipped UI. A plugin that
-needs to react to task changes listens for **`schedule/changed`** (emit,
-no payload — refetch rather than expecting a diff).
+The other confirmed methods: `list(request?)` (one page `{ items, shown,
+total, limit, offset }`; default 100, maximum 500, optional `active`
+filter), `catalog()`, `view({ id })`, `history({ id, limit, before? })`
+(newest first, `limit` 1-100), `edit(request, actorSessionId?, signal?)`
+(`{ id, action: 'update', patch, expectedUpdatedAt? }` — `patch` may change
+`title`, `prompt`, `timing`, `target`, or `active` to pause/resume — or `{
+id, action: 'delete' }`; a mismatched `expectedUpdatedAt` returns
+`schedule_conflict`), `deleteInactive()` (removes `ended` tasks),
+`run({ id }, signal?)` (deliver now without moving the scheduled
+occurrence), and `deliveryLimits()`. The Session-bound `update`/`delete`
+and the root `scheduleView` helper don't exist at this tag. A plugin whose
+job is "show or edit the task list" is duplicating shipped UI. A plugin that
+needs to react to task changes listens for **`schedule/changed`** (emit, no
+payload — refetch rather than expecting a diff). An embedding that owns
+Session activation answers **`schedule/resolve-agent`** (waterfall,
+`(sessionId, next) => Promise<Agent>`; `next()` uses the Web Session
+controller).
 
-**Delivery semantics a plugin must not assume away:** at the due time the
-Host resolves the original Session (restoring it cold if needed) and
-appends the prompt as a plugin-sourced `followup()` — delivered as a
-clearly labelled scheduled user message. It never steers or cancels the
-current turn and doesn't wait for model completion. There is no
-model-result acknowledgement, execution cancellation, or external
-notification channel, and a crash between inbox persistence and the task
-write can repeat a delivery — design the reminder prompt to be safe to
-receive twice. Delivery requires a Session persistence backend
-(`sessionPersistence` is a load-order requirement of this service).
+**Delivery semantics a plugin must not assume away:** one Host timer drives
+active tasks; each delivery appends the prompt to the target Session's inbox
+and records a receipt (`scheduledAt`, `deliveredAt`, `messageId`,
+`targetSessionId`) that acknowledges the durable inbox write, not model
+completion. A per-task minimum interval of 60 seconds applies to timed and
+manual deliveries. Session inbox persistence precedes the receipt write, so
+a crash between them can repeat a delivery — design the prompt to be safe
+to receive twice. The Host must be running; `sessionPersistence` is a
+load-order requirement of this service. A call whose actor is a delegated
+subagent's tool receives `subagent_session` from the shipped model tools.
 
-**Honesty note:** `ScheduleRecord`'s per-selector variants,
-`ScheduleDeleteRequest`/`ScheduleUpdateRequest`/`ScheduleDeliveryHistoryRequest`'s
-fields, and `ScheduleUpdateResult`'s outcome union are declared in
-`packages/schedule/schedule/src/types.ts` and `schedule.md`'s "Durable
-records"/"Timing edits" sections — not transcribed here. The example
-relies on two doc-confirmed facts: `execute`'s second argument is a
-`ToolRunContext`, which extends `ToolExecution` and so carries the
-optional calling `agent` and required `signal` (`tools.md`); and
-`Agent.id` is the agent's `SessionId` (`core.md`).
+**Honesty note:** `ScheduleCatalogEntry`/`ScheduleRecord`'s full fields,
+`ScheduleEditResult`, `ScheduleRunResult`, and the `at`/`daily`/`weekly`
+input shapes are declared in `packages/schedule/schedule/src/types.ts`; the
+v2 storage schema and composition rules are owned by
+`packages/schedule/schedule/README.md`, which this skill did not read. The
+example relies on two doc-confirmed facts: `execute`'s second argument is a
+`ToolRunContext`, which extends `ToolExecution` and so carries the optional
+calling `agent` and required `signal` (`tools.md`); and `Agent.id` is the
+agent's `SessionId` (`core.md`).
 
 ## Shape 13: User-question plugin (`ctx.userQuestions`)
 
@@ -1521,17 +1755,22 @@ Confirmed request shape: `AskUserQuestionRequest` carries `questions:
 AskUserQuestionItem[]`, optional `agent`, optional `signal`, and optional
 `wait: { callId, timed? }` (card-keying for Client answerers). Each item
 is `{ id, question, detail?, header?, options?: { label, description? }[],
-multiSelect?, intent? }`; `intent` is currently only `{ kind:
-'plan-review', approve: <option label>, callId? }`, requires `detail`, and
-changes presentation only. The answer is `{ answers: { id, selected:
+multiSelect?, intent? }`. `intent` changes presentation only and is one of
+`{ kind: 'plan-review', approve: <option label>, callId? }` (requires
+`detail`) or `{ kind: 'approval', approve, reject, always?, subject?,
+display? }` — a blocking permission decision that requires one question
+with `detail` and option labels covering exactly `reject`, `approve`, and
+the optional `always`; it rejects multi-select and timed waits. `subject`
+(`{ name, icon? }`) is recognition metadata, never an authorization
+identity. The answer is `{ answers: { id, selected:
 string[], custom?: string }[] }` — for single-select, `custom` overrides
 and `selected` is empty; an item with empty `selected` and no `custom` is
 a skipped question.
 
 **Who may ask:** when `agent` is supplied it must be the registry's exact
-live **runtime root** — an owned child (a subagent) has no human answerer
-and is rejected with `DELEGATED_CALLER`; a stale instance with
-`CALLER_NOT_LIVE`; an aborted signal with `ASK_ABORTED`. `askTimed`
+live instance of an **ordinary Session** — an agent with subagent origin
+has no human answerer and is rejected with `DELEGATED_CALLER`; a stale
+instance with `CALLER_NOT_LIVE`; an aborted signal with `ASK_ABORTED`. `askTimed`
 rejects a non-integer, non-positive, or oversized wait with
 `BAD_TIMEOUT`. `UserQuestionError` extends `HarnessError`, so a tool that
 lets it propagate surfaces `{ name, code }` to the model.
@@ -1604,18 +1843,29 @@ the original argv when it cannot enforce. Confirmed `ctx.sandboxPolicy`
 methods: `resolve(request?: SandboxPolicyRequest): SandboxExecutionPolicy`
 (the complete per-call policy — an approved explicit mode outranks the
 session's last `sandbox/mode` event, which outranks the deployment
-default) and `overrideOf(session): SandboxMode | undefined` (the session's
-logged override alone, without the deployment default applied).
+default; throws `SandboxInvalidRootError` (`SANDBOX_INVALID_ROOT`) for a
+relative or NUL-containing recorded cwd), `overrideOf(session): SandboxMode
+| undefined` (the session's logged override alone, without the deployment
+default applied), and `registerWritableRoot(session, directory): () =>
+void` (permit writes under one absolute directory in that Session's future
+`workspace-write` operations; the calling context owns the effect, grants
+are runtime-only and must be registered again after resume or fork, and on
+Windows only the harness file tools honor them). `confine` can also reject
+with `SandboxPreparationError` (`SANDBOX_PREPARATION_FAILED`,
+`SANDBOX_INVALID_TEMP_ROOT`) when the provider cannot prepare host state
+for the mode.
 
 **In-memory state (`dsh-v0.2.1-alpha.3`).** `PtcRunRequest` gained an
 optional `stateOwner?: object`: omission requests a fresh one-shot
 environment, and a consumer passing an owner must `await
 runtime.release(owner)` when that owner ends (cleanup failures reject that
 call). Stateless providers ignore it, and retained state is never durable or
-part of the Session format. A provider's `programFormat` now distinguishes
-an async function body (top-level `await`/`return`) from a REPL (top-level
-declarations, `await`, and a final expression whose value is the completion
-value). The persistent Node provider's reset/recovery behavior lives in
+part of the Session format. A provider's `programFormat`
+(`PtcProgramFormat`) is `'function-body'` (top-level `await`/`return`),
+`'repl'`, or `'script'` (both: top-level declarations, `await`, and a final
+expression whose value is the completion value, without top-level
+`return`); `retainsState` reports memory retention independently of the
+source form. The persistent Node provider's reset/recovery behavior lives in
 `packages/ptc-runtime/ptc-runtime-node/README.md#persistent-repl`, which
 this skill did not read.
 
@@ -1670,6 +1920,18 @@ failure is only warned, never rolled back — the directory change itself
 stays committed, and the next admitted request receives the current value
 regardless. Directory context never enters the system prompt.
 
+Failures are `WorkingDirectoryError`s: `ensure` throws
+`WORKING_DIRECTORY_UNAVAILABLE` when the original project is also gone or
+the service is disposed; `set` throws `WORKING_DIRECTORY_INVALID` for an
+empty path and `WORKING_DIRECTORY_NOT_FOUND` for a path that isn't an
+existing directory. A plugin that runs a resource operation on a directory
+(removing a checkout, say) coordinates with validation through the
+**`working-directory/access`** waterfall — `(request: { agent, path:
+string | null, signal }, next) => Promise<string>`: a listener that must
+wait awaits its operation, then calls `next()`; every other listener calls
+`next()` at once; a rejection fails that access and leaves the recorded
+directory unchanged.
+
 ## Shape 16: Git worktree plugin (`ctx.worktrees`)
 
 **New to this skill as of `dsh-v0.2.1-alpha.2`, and an experimental
@@ -1697,8 +1959,10 @@ export function apply(ctx: Context) {
 }
 ```
 
-Confirmed method: `create(agent: Agent, request?: CreateWorktreeRequest,
-signal?: AbortSignal): Promise<CreatedWorktree>` — pins the requested local
+Confirmed methods: `create(agent: Agent, request?: CreateWorktreeRequest,
+signal?: AbortSignal, onPhase?: (phase: CreateWorktreePhase) => void):
+Promise<CreatedWorktree>` — `onPhase` receives `'prepare'` and `'checkout'`
+before each stage and must not throw — pins the requested local
 revision before allocating the checkout (never fetches missing objects,
 never copies staged/unstaged/untracked/ignored files from the source
 checkout), fails if the branch name or checkout path already exists, and
@@ -1711,14 +1975,128 @@ destination and the shared Git administration directory — this shape
 doesn't grant new write permissions, it only requires them to already be
 in place.
 
+`restore(agent, request: RestoreWorktreeRequest, signal?, onPhase?):
+Promise<RestoredWorktree>` checks a removed worktree out again at its
+recorded `path` from its `branch`, or recreates the branch at `baseCommit`
+when it's gone (`branchRecreated: true`); uncommitted changes are not
+recovered, an existing directory fails, and the calling Session's working
+directory doesn't change. The service records each creation in the Session
+log and, when the creating Session is archived, removes a clean,
+unreferenced checkout (branches and commits remain; its `retainOnArchive`
+setting keeps every checkout). `cleanupOf(session, revision)` reads an
+archive cleanup's `WorktreeCleanup` (`revision`, `status`: `scheduled`,
+`retained`, `removed`, or `failed`), and **`worktree/cleanup`** (emit,
+`{ sessionId, path, cleanup }`) fires at admission and at settlement.
+
 **Honesty note:** this package ships switched off by default (loaded
-through the optional "Git Worktrees" bundle in the GUI plugin manager, or
-by an explicit composition) and the doc itself frames it as experimental —
+through the optional "Change requests & worktrees" bundle in the GUI plugin
+manager, the standalone worktree bundle in other profiles, or an explicit
+composition) and the doc itself frames it as experimental —
 treat the surface as more likely to shift than Shapes 1-4's, the same
 caution Shape 5's Agent Team package gets. Cancellation or failure can
 retain partial Git/filesystem artifacts with no automatic cleanup; the
 thrown error identifies their location, per the doc, but don't assume a
 plugin can clean those up itself without re-reading that section.
+
+## Shape 17: MCP server registration plugin (`ctx.mcpManager`)
+
+**New to this skill as of `dsh-v0.2.2-rc.3`.** A plugin that brings its own
+MCP server — the server's tools then reach the model through the ordinary
+MCP client path — without asking the user to configure it in Settings.
+Confirmed against `docs/subsystems/mcp.md`'s generated Cordis surface
+(`McpServerManager`, package `packages/mcp/mcp-manager`). The Web and
+Desktop profiles mount the manager once; in any other profile, reach it
+with `ctx.get('mcpManager')` (Shape 4's optional-dependency pattern) rather
+than `inject`.
+
+```ts
+export const inject = ['mcpManager']
+export function apply(ctx: Context) {
+  ctx.mcpManager.register('acme-docs', {
+    /* transport, endpoint, budgets — McpServerRegistration, validated like a configured entry */
+  })
+}
+```
+
+`register(name, entry)` contributes one server for the calling plugin's
+lifetime and returns an idempotent disposer; `name` is the server key and
+tool namespace, unique across configured and registered servers, and the
+call throws when the name is taken, the entry is invalid, or the manager is
+disposed. A registered entry is enabled while registered, and its removal
+awaits the instance's unmount, so plugin disposal withdraws the server's
+tools before settling. The other confirmed methods: `list()` (configured,
+then registered, then retained records, without mounting or probing),
+`probe(name, options?)` (connect, list tools, and close without touching
+the live instance), and the `@Remote` management surface `watch`,
+`restart`, and `probeFromClient` the Settings page calls. A plugin that
+reacts to server health listens for **`mcp-manager/status`** (parallel,
+`(name, status)`; lifecycle operations don't wait for listeners).
+
+**Honesty note:** `McpServerRegistration`, `McpManagedServerView`,
+`McpManagedServerStatus`, `McpProbeOptions`, and `McpProbeResult`'s fields
+are owned by `packages/mcp/mcp-manager/README.md` and its `src/types.ts`,
+which this skill did not read. Read them before constructing an entry, and
+log friction via `hedgehog friction add` if they don't resolve the shape.
+`ctx.mcpManager` is distinct from configuring one `@deepseek-ai/dsh-mcp-client`
+row per server in `cordis.patch.yml`, which is bundle composition.
+
+## Shape 18: Session projection plugin (`ctx.sessionProjections`)
+
+**New to this skill as of `dsh-v0.2.2-rc.3`.** A plugin that derives
+per-Session state from the Session log — a counter, a status the Web
+Client shows, a fold another service reads — as a pure, synchronous unit
+the framework drives on every committed event. Confirmed against
+`docs/subsystems/session-projection.md` (`SessionProjectionRegistry`,
+package `@deepseek-ai/dsh-session-projection`).
+
+```ts
+export const inject = ['sessionProjections', 'tools']
+export async function apply(ctx: Context) {
+  const handle = await ctx.sessionProjections.register({
+    key: 'myPlugin.toolCalls',
+    stateSchema: z.object({ count: z.number() }),
+    stateVersion: 1,
+    init: () => ({ count: 0 }),
+    apply: (state, event) => event.type === 'tool/call' ? { count: state.count + 1 } : state,
+  })
+  ctx.tools.register(defineTool({
+    name: 'tool-call-count',
+    // ...
+    async execute(_args, exec) {
+      if (!exec.agent) throw new Error('tool-call-count needs a calling agent')
+      return String(handle.stateOf(exec.agent.session).count)
+    },
+  }))
+}
+```
+
+`register(definition)` is asynchronous and returns a `ProjectionHandle<S>`:
+**await it in an asynchronous `apply()` (or a class-form service's
+`[Service.init]()`) before publishing any consumer**, and retain the handle
+(`docs/upgrade-guide/v0.2.1-rc.2/session-projection-handles/guide.md`).
+A unit's `init(header, inheritedEventCount)` and `apply(state,
+event)` must be synchronous and pure, `state` must be plain JSON validated
+by a Zod `stateSchema`, and `apply` returns the same reference for an event
+it ignores. Bump `stateVersion` when state fields or fold semantics change.
+A unit without `wire` is host-only; a client-visible unit declares its key
+on `SessionProjectionMap` and supplies `wire: { viewSchema, view, summary? }`.
+Read your own unit's state with `handle.stateOf(session)` (or a bound
+`handle.readerFor(session)`), not by calling `snapshot()` first —
+`snapshot(session, keys?)` computes only the units it returns, and the
+registry's `cachedSnapshot` is deprecated. `handle.dispose()` (or fiber
+disposal) releases one reference; the handle stays readable afterwards, and
+`checkpoint(session)` keeps a released unit's last row for existing
+Sessions. `onChanged(listener)` fires per changed key, and
+`onEventChanged(listener)` once per committed event after every unit was
+driven.
+
+**Honesty note:** the example's Zod import and its `SessionEvent` narrowing
+on `event.type` follow the doc's `ProjectionDefinition` (`stateSchema:
+ZodType<S>`, `apply(state, event: SessionEvent)`); the published package
+that re-exports Zod to plugins, and the legacy synchronous-registration
+compatibility rules, are owned by
+`packages/session/session-projection/README.md`, which this skill did not
+read. Confirm both before relying on them.
 
 ## Constraints
 
@@ -1731,6 +2109,9 @@ plugin can clean those up itself without re-reading that section.
   `ctx.agents.currentInitiator()`/`requireInitiator()`. See "Agent-passing
   and `agent.inbox`" above before touching any call that used to assume
   `ctx.agent`.
+- **Don't switch models from `agent/request`.** The hook is deprecated;
+  record a Session selection with `agent.model.select(...)` instead (see
+  the Agent-passing section).
 - **`Inbox` is not an importable runtime class.** Access pending inbox
   state through `agent.inbox` (the confirmed `nextTurn`/`nextStep`/
   `clear`/`append`/`prepend`/`replace`/`remove`/`splice` surface); don't
@@ -1741,14 +2122,14 @@ plugin can clean those up itself without re-reading that section.
   isn't confirmed in this file or in a doc you've just re-fetched. A
   plausible-sounding name is still an invented one. This includes literal
   field names on a request object this skill left as a placeholder
-  comment (Shapes 5, 6, 9, 10, 14) — confirm those against the cited source
+  comment (Shapes 5, 6, 9, 10, 14, 17) — confirm those against the cited source
   file, don't guess them from the prose description. For Shape 10
   specifically, a slot key must appear in `slots.md`'s "Conversation
   hierarchy" or the generated Client inspect catalog — don't register
   into a key invented from what "feels like" it should exist.
 - Where this skill flags a doc as thin or a signature as unconfirmed
   (Shape 4's `ctx.provide()` correction, the Agent/Inbox section's
-  import-specifier gap, Shapes 5/6/7/8/9/10/12/14's unrestated request-type
+  import-specifier gap, Shapes 5/6/7/8/9/10/12/14/17/18's unrestated request-type
   fields, the Plugin state records note's caller-restriction gap), stay
   thin rather than filling the gap — re-fetch DSH's docs for the specific
   call, and log friction via `hedgehog friction add` if the docs still
@@ -1756,10 +2137,12 @@ plugin can clean those up itself without re-reading that section.
 - Tool-shape plugins go through `pnpm generate:tool <name>` first; this
   skill's Shape 1 snippet is for extending or hand-checking generated
   output, not for hand-authoring a tool plugin from scratch.
-- Shape 5 (Agent Team) sits on a package the doc itself calls
-  experimental; Shapes 7 (Jobs) and 8 (Workflow) are abstract seams by
-  the docs' own description, not fixed concrete APIs. Treat all three as
-  more likely to move between tags than Shapes 1-4's. Shape 10 (Web
+- Shape 5 (Agent Team) was reshaped at `dsh-v0.2.2-rc.3` from a roster
+  and mailbox service into a task board over the subagent tree, and
+  Shape 6's tree and naming model is new at the same tag; Shapes 7 (Jobs)
+  and 8 (Workflow) are abstract seams by the docs' own description, not
+  fixed concrete APIs. Treat all four as more likely to move between tags
+  than Shapes 1-4's. Shape 10 (Web
   Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and still
   has a large surface — the `client-resources.md` provider contract is
   now confirmed as of `dsh-v0.1.7-rc.1`, but the full owner-props table
@@ -1770,8 +2153,8 @@ plugin can clean those up itself without re-reading that section.
   The `ctx.agents.create`/`resume` and `ctx.agentLoop` surface added to
   the Agent-passing section at the same tag likewise leaves
   `CreateAgentOptions`/`ResumeAgentOptions`/`AgentHandle`/`AgentFactory`
-  unresolved beyond their method signatures. Shape 12 (Schedule) is
-  mounted only by an optional *experimental* bundle, and Shape 13's timed
+  unresolved beyond their method signatures. Shape 12 (Schedule) moved to
+  a Host-wide task API at `dsh-v0.2.2-rc.3`, and Shape 13's timed
   questions sit behind an experimental, manually enabled mode — treat
   both as more likely to move between tags than Shapes 1-4. Shape 14 (PTC
   provider / sandbox) is new as of `dsh-v0.2.1-alpha.2` and leaves its
@@ -1784,7 +2167,11 @@ plugin can clean those up itself without re-reading that section.
   state records note (new at the same tag, between Shapes 9 and 10) is
   explicitly experimental-package surface with an unresolved
   caller-restriction question — treat it as thinner than any numbered
-  shape until that README is read.
+  shape until that README is read. Shapes 17 (MCP server registration) and
+  18 (Session projections) are new as of `dsh-v0.2.2-rc.3`; Shape 17 leaves
+  `McpServerRegistration` unresolved, and Shape 18's unit contract is
+  confirmed but its package README is unread — treat both with the same
+  caution as Shape 14.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
