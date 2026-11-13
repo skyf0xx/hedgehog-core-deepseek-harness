@@ -29,7 +29,9 @@ layers, in the same order, for every deepseek-harness project:
   not by you mid-task.)
 - **`skills/dsh-plugin-shapes/SKILL.md`** — the reference catalog of DSH
   plugin shapes: tool, hook, UI, protocol-driver, plus agent-team,
-  subagent, job, workflow, webhook, and session-query shapes, and the
+  subagent, job, workflow, webhook, session-query, Web Client slot,
+  agent-preset, schedule, user-question, PTC/sandbox, working-directory,
+  worktree, MCP-server, and Session-projection shapes, and the
   Agent-passing/`agent.inbox` pattern that replaced `ctx.agent`/`Inbox`.
   Consult it for the exact DSL — `defineTool`, `apply(ctx)`, `inject`,
   manifest shape — instead of re-deriving DSH's API from memory or from an
