@@ -49,7 +49,7 @@ jobs:
       - if: steps.version.outputs.before != steps.version.outputs.after
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
       - if: steps.version.outputs.before != steps.version.outputs.after

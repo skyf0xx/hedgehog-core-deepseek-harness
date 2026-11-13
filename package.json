@@ -24,7 +24,7 @@
     "!workspace/plugins/*/lib/**"
   ],
   "engines": {
-    "node": ">=22.15.0"
+    "node": ">=24.9.0"
   },
   "keywords": [
     "hedgehog-core",
