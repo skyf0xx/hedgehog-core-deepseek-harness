@@ -101,9 +101,13 @@ placeholder left unfilled by a deferred install) — skip this if the
 section is already filled. Either way, by the end of this step every
 file listed in "What lands" above should be on disk.
 
-### 3. Confirm `dsh` and `pnpm` are reachable
+### 3. Confirm Node, `dsh` and `pnpm` are reachable
 
-`pnpm` must already be on `PATH` for step 4 to run at all. `dsh` itself
+`node -v` must satisfy `engines.node` in the workspace `package.json` —
+the pinned DSH refuses to run on anything older. If it doesn't, stop and
+tell the user which Node version to install; nothing past this step
+works on an older runtime. `pnpm` must already be on `PATH` for step 4
+to run at all. `dsh` itself
 is not a separate install — it ships as the CLI binary inside the
 `@deepseek-ai/dsh` npm package installed in step 4, so it only becomes
 reachable after that install completes, via `pnpm dsh` (or `pnpm exec
