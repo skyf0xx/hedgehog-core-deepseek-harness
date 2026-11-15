@@ -32,6 +32,19 @@ async function writeGenerated(path, content) {
   console.log(`  created ${path.slice(WORKSPACE_ROOT.length + 1)}`);
 }
 
+// Local dev-patch overlay for `pnpm dsh web --patch plugins/{name}/cordis.yml`.
+// DSH requires an absolute plugin path in --patch overlays, so the file is
+// specific to this checkout: it is gitignored, and a fresh checkout
+// recreates it with `pnpm generate:overlay <name>`.
+export async function writeDevOverlay(rawName) {
+  const name = rawName.trim();
+  const pluginDir = join(WORKSPACE_ROOT, 'plugins', name);
+  await writeGenerated(
+    join(pluginDir, 'cordis.yml'),
+    `- insert:\n    - id: ${name}\n      name: ${join(pluginDir, 'src', 'index.ts')}\n`,
+  );
+}
+
 export async function generateTool(rawName) {
   const name = rawName.trim();
   if (!NAME_PATTERN.test(name)) {
@@ -87,14 +100,7 @@ export async function generateTool(rawName) {
     ) + '\n',
   );
 
-  // Local dev-patch overlay for `pnpm dsh web --patch plugins/{name}/cordis.yml`
-  // — the plugin path must be absolute (DSH's own convention for --patch
-  // overlays), resolved at generate time since it's specific to this checkout.
-  const absolutePluginEntry = join(pluginDir, 'src', 'index.ts');
-  await writeGenerated(
-    join(pluginDir, 'cordis.yml'),
-    `- insert:\n    - id: ${name}\n      name: ${absolutePluginEntry}\n`,
-  );
+  await writeDevOverlay(name);
 
   await writeGenerated(
     join(WORKSPACE_ROOT, '.hedgehog', 'dsh-smoke', `${name}.md`),
