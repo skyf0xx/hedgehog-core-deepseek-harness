@@ -60,14 +60,14 @@ exact `rc` tag (not a caret range — pre-1.0 semver isn't trustworthy yet)
 · **`@deepseek-ai/cordis`**, the plugin kernel DSH is built on, pinned to
 its own exact stable version — Cordis is versioned independently of
 DSH's `rc` cadence, so its pin is not the same string as the other two ·
-**pnpm workspace** rooted at `workspace/`, one package per plugin under
+**pnpm workspace** rooted at the repo root, one package per plugin under
 `plugins/*` · **TypeScript**, `tsc --noEmit` as the `logic` and `join`
-layers' gate. See `workspace/package.json` for the exact pinned versions
+layers' gate. See `package.json` for the exact pinned versions
 currently in effect.
 
 A new `rc` tag lands often; this core's pin only moves when a human
 re-pins it by hand after evaluating what actually broke, then regenerates
-and re-verifies the whole `workspace/` before the change ships. Never
+and re-verifies the whole workspace before the change ships. Never
 bump a pin mid-build to chase a newer feature — that's a package-level
 decision, not a build-task one. If a task seems to need something the
 pinned version doesn't have, log it with `hedgehog friction add` and
@@ -76,26 +76,27 @@ report it rather than bumping the dependency.
 ### Layout
 
 ```text
-workspace/
-  core.yaml              the six-layer sequence: scaffold, logic, wiring, smoke, bundle, join
-  package.json            pnpm workspace root, pinned dsh/cordis/dsh-tools versions
-  pnpm-workspace.yaml      packages: ["plugins/*"]
-  plugins/
-    <plugin-name>/
-      package.json         dsh.bundle.patch block, this plugin's own pinned deps
-      cordis.patch.yml      the patch row that loads this plugin into a profile
-      cordis.yml             dev-patch overlay for `pnpm dsh web --patch`
-      tsconfig.json
-      src/index.ts            the plugin's own TypeScript — name, apply(ctx), the chosen shape's DSL
-  tools/generators/
-    cli.mjs                 entrypoint: `node tools/generators/cli.mjs tool <name>`
-    tool/generate.mjs        the tool-plugin generator
-    tool/template.*.tmpl      package.json, cordis.patch.yml, and plugin-body templates
-    verify-scaffold.mjs       the scaffold layer's structural verify command
+core.yaml                the six-layer sequence: scaffold, logic, wiring, smoke, bundle, join
+package.json             pnpm workspace root, pinned dsh/cordis/dsh-tools versions
+pnpm-workspace.yaml      packages: ["plugins/*"]
+pnpm-lock.yaml           lockfile; each generated plugin adds an importer
+README.md                index of plugins; the generator appends one bullet per plugin
+plugins/
+  <plugin-name>/
+    package.json         dsh.bundle.patch block, this plugin's own pinned deps
+    cordis.patch.yml     the patch row that loads this plugin into a profile
+    cordis.yml           dev-patch overlay for `pnpm dsh web --patch`; holds an absolute path, so it is gitignored
+    tsconfig.json
+    src/index.ts         the plugin's own TypeScript: name, apply(ctx), the chosen shape's DSL
+tools/generators/
+  cli.mjs                entrypoint: `tool <name>` (the generator) and `overlay <name>` (rewrites a plugin's cordis.yml)
+  tool/generate.mjs      the tool-plugin generator
+  tool/template.*.tmpl   package.json, cordis.patch.yml, and plugin-body templates
+  verify-scaffold.mjs    the scaffold layer's structural verify command
 .hedgehog/
-  hedgehog.db              the build graph — one intent per plugin, its six compiled tasks per intent
+  hedgehog.db            the build graph (gitignored): one intent per plugin, its six compiled tasks per intent
   dsh-smoke/
-    <plugin-name>.md        the real task prompt the smoke layer runs headless against
+    <plugin-name>.md     the real task prompt the smoke layer runs headless against
 ```
 
 ### Core rules

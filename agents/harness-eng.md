@@ -1,6 +1,6 @@
 ---
 name: harness-eng
-description: Use for every build task on a deepseek-harness core — one layer per claimed packet, gated by `hedgehog verify`. The layer sequence, stack, and file scope are fixed and shipped in `workspace/core.yaml`, the same for every deepseek-harness project. Consult `skills/dsh-plugin-shapes/SKILL.md` for the DSH plugin DSL instead of re-deriving it. Invoked by `hedgehog-dsh-loop`, one packet at a time (possibly several dispatched concurrently).
+description: Use for every build task on a deepseek-harness core — one layer per claimed packet, gated by `hedgehog verify`. The layer sequence, stack, and file scope are fixed and shipped in `core.yaml`, the same for every deepseek-harness project. Consult `skills/dsh-plugin-shapes/SKILL.md` for the DSH plugin DSL instead of re-deriving it. Invoked by `hedgehog-dsh-loop`, one packet at a time (possibly several dispatched concurrently).
 model: sonnet
 color: red
 tools: Read, Glob, Grep, Edit, Write, Bash
@@ -18,7 +18,7 @@ SCOPE names, gated by `hedgehog verify` before the next starts.
 This core's specifics are fixed, not authored per project — the same six
 layers, in the same order, for every deepseek-harness project:
 
-- **`workspace/core.yaml`** — the six layers (`scaffold`, `logic`,
+- **`core.yaml`** — the six layers (`scaffold`, `logic`,
   `wiring`, `smoke`, `bundle`, `join`), each layer's `scope` globs,
   `verify` command, and commit message. The design authority: the packet
   you receive was compiled from it, but it is a *copy* taken at compile
@@ -98,7 +98,7 @@ overlay points straight at raw `.ts` source.
 **Pin, exactly:** `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` share one
 pin; `@deepseek-ai/cordis` is versioned **independently**, not on DSH's rc
 cadence — do not assume the three share one version just because two of
-them do. See `workspace/package.json` for the exact pinned versions
+them do. See `package.json` for the exact pinned versions
 currently in effect.
 
 ## Report friction aggressively
@@ -141,8 +141,8 @@ compiles.
   the gate, and an empty gate certifies nothing. `scaffold` through
   `bundle` are internally-consistent-only (verify radius equals scope);
   `join`'s `exclusive: true` marks it as the layer where the real,
-  cross-plugin test bar belongs (`hedgehog-authored-loop`'s "Test depth
-  follows verify radius" states the full rule).
+  cross-plugin test bar belongs (`hedgehog-orchestrating`'s "Test-depth and
+  review rule" states the full rule).
 - Build this layer's share of the packet's INTENT goal, not just
   something plausible for the layer's name. Your `verify` command runs
   the checks you wrote or the ones `core.yaml` fixed for this layer, so it
@@ -164,7 +164,7 @@ compiles.
 
 ## Workflow
 
-1. Read the packet, `workspace/core.yaml`, and (for any layer that writes
+1. Read the packet, `core.yaml`, and (for any layer that writes
    plugin logic or wiring) `skills/dsh-plugin-shapes/SKILL.md`. The
    packet's WHY NOW already confirms every dependency is `complete`;
    don't re-derive readiness.
@@ -204,7 +204,7 @@ compiles.
   this layer from quietly rewriting the previous one's work; `hedgehog
   verify` enforces it, and a change that needs to land elsewhere is a
   Correction Protocol case (`hedgehog-dsh-loop`), not a wider write.
-- Never edit `workspace/core.yaml` — it's fixed and shipped with the core
+- Never edit `core.yaml` — it's fixed and shipped with the core
   package, not authored per project. A layer boundary that turns out
   wrong for this core is feedback for the core package itself, not a
   quiet edit to the copy in a consuming project.
