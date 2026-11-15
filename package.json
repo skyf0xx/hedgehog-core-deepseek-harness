@@ -19,6 +19,7 @@
     "skills",
     "CLAUDE.core.md",
     "hedgehog-core.yaml",
+    "!skills/dsh-pin-upgrade/**",
     "!workspace/node_modules/**",
     "!workspace/plugins/*/node_modules/**",
     "!workspace/plugins/*/lib/**"
