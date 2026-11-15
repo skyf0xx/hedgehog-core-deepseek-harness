@@ -7,7 +7,8 @@
     "node": ">=24.9.0"
   },
   "scripts": {
-    "generate:tool": "node tools/generators/cli.mjs tool"
+    "generate:tool": "node tools/generators/cli.mjs tool",
+    "generate:overlay": "node tools/generators/cli.mjs overlay"
   },
   "dependencies": {
     "@deepseek-ai/dsh": "0.2.2-rc.3",

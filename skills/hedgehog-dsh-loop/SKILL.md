@@ -10,16 +10,19 @@ The operating loop for a bootstrapped `deepseek-harness` project:
 ready layer, run each through `harness-eng`, `hedgehog verify` gates and
 commits it. The build graph (`.hedgehog/hedgehog.db`) is the live list —
 query it via `hedgehog status`/`hedgehog ready`, never re-derive state
-from prose. This core's `workspace/core.yaml`, already the source of
+from prose. This core's `core.yaml`, already the source of
 truth, defines the six compiled layers and this core's module axis:
 `{module}` is a plugin name, and a project builds one intent per plugin
 it wants to add to the workspace. This is the same module-axis mechanism
 `full-stack-app` uses per domain module — not the linear, single-module
-degenerate case `landing-page`'s loop implements — which is why `workspace/core.yaml` declares `pattern: vertical-slice`. Because layers vary
+degenerate case `landing-page`'s loop implements — which is why
+`core.yaml` declares `pattern: vertical-slice`. Because layers vary
 independently per plugin, a single `hedgehog claim` call can return
 **multiple** ready tasks at once (e.g. `logic` for one plugin and
 `scaffold` for another, claimed together) — never assume `--count N`
-returns exactly one task the way a linear chain's loop would.
+returns exactly one task the way a linear chain's loop would. Two
+plugins' `scaffold` tasks are never claimed together: both scopes include
+the shared `README.md` and `pnpm-lock.yaml`, so they serialize.
 
 One agent, `harness-eng`, builds every layer for every plugin — there is
 no per-layer or per-stage agent handoff the way other cores split
@@ -72,7 +75,7 @@ after the user replies.
 2. **Add the intent**: `hedgehog intent add --id <plugin-name> --goal
    "<what this plugin does>" --outcome "<what done looks like>"` — one
    call per plugin, no BMAD archive, no mined brief. Run `hedgehog plan`
-   next to compile it against this core's `workspace/core.yaml` into the
+   next to compile it against this core's `core.yaml` into the
    six per-plugin layer tasks, then `hedgehog status` to show the
    compiled chain.
 3. **Commit planning intake's output as one commit**,
@@ -110,20 +113,29 @@ after the user replies.
    `.hedgehog/BMAD/`, archival and immutable from here), then hand off to
    `bootstrap` or The Loop.
 
-`planner` owns this section; see that agent for when it runs, including
-its Re-entry pass for adding a new plugin to an already-built project
-(see Stop Condition below).
+`planner` decides when this section first runs. Every additional plugin
+in an already-built project runs this section again, from the top, as
+its own intake (see Stop Condition below).
 
 ## The generator step (before `scaffold` can be claimed)
 
 `scaffold`'s scope files don't get hand-authored — they get generated.
-**Before claiming a plugin's `scaffold` task, run `pnpm generate:tool
-<plugin-name>` first**, from `workspace/`. It produces the plugin's
+**Run `pnpm generate:tool <plugin-name>` from the repo root before
+claiming a plugin's `scaffold` task.** It produces the plugin's
 `package.json` (with the `dsh.bundle.patch` block and pinned deps),
 `cordis.patch.yml`, a stub `src/index.ts` that typechecks and boots
-(`execute()` throws "not implemented"), `tsconfig.json`, a dev-patch
-`cordis.yml` for the local `pnpm dsh web --patch` launch loop, and a
-placeholder smoke-prompt file at `.hedgehog/dsh-smoke/<plugin-name>.md`.
+(`execute()` throws "not implemented"), `tsconfig.json`, a placeholder
+smoke-prompt file at `.hedgehog/dsh-smoke/<plugin-name>.md`, and a
+dev-patch `cordis.yml` for the local `pnpm dsh web --patch` launch loop.
+It also appends the plugin's bullet to the root `README.md` and installs
+the plugin's dependencies, which updates `pnpm-lock.yaml`. `scaffold`'s
+scope covers all of these except `cordis.yml`: the generator writes the
+checkout's absolute path into it, so it is gitignored and a fresh
+checkout recreates it with `pnpm generate:overlay <plugin-name>`.
+
+The generator runs before the claim, so its output is already in the
+working tree when `hedgehog claim` snapshots it. `hedgehog verify` then
+commits everything inside `scaffold`'s scope, generated files included.
 
 This changes what `harness-eng`'s `scaffold`-layer work actually is: not
 writing these files from scratch, but confirming the generator's output
@@ -153,10 +165,11 @@ step to work around by hand-writing the scaffold files.
    returned, don't assume the first is the only one. `hedgehog ready`
    previews the same decision without claiming anything.
 2. **For each claimed packet, confirm its layer's prerequisites**: for
-   `scaffold`, confirm `pnpm generate:tool <plugin-name>` has already
-   run (see above) — if not, run it first, then proceed. For every other
-   layer, the packet's ALLOWED SCOPE and the prior layer's landed commit
-   are the only inputs needed.
+   `scaffold`, confirm `plugins/<plugin-name>/` exists from `pnpm
+   generate:tool` (see above). If it does not, run the generator now:
+   the root `README.md` and `pnpm-lock.yaml` it touches are inside
+   `scaffold`'s scope. For every other layer, the packet's ALLOWED SCOPE
+   and the prior layer's landed commit are the only inputs needed.
 3. **Delegate the packet to `harness-eng`**, which does the layer's
    actual work against that plugin: `scaffold` confirms/adjusts generator
    output and fills the smoke prompt; `logic` implements `execute()` (and
@@ -171,8 +184,8 @@ step to work around by hand-writing the scaffold files.
    layer before `join` has its verify radius equal to its own scope —
    internally-consistent-only; `join`'s `exclusive: true` is what marks it
    as the layer where the real test bar and the `reviewer` pass belong
-   (`hedgehog-authored-loop`'s "Test depth follows verify radius" states
-   the full rule, shared across cores).
+   (`hedgehog-orchestrating`'s "Test-depth and review rule" states the
+   full rule).
    Multiple claimed packets for different plugins can be worked in
    whatever order is convenient — they're independent unless a Correction
    Protocol patch links them (see below). If a dispatch by name reports
@@ -196,7 +209,7 @@ step to work around by hand-writing the scaffold files.
    verify <task-id> --owner <owner>`.** It checks the touched files
    against that packet's ALLOWED SCOPE, runs the layer's `VERIFICATION`
    command, and on a pass writes the commit (the exact Conventional
-   Commit message from `workspace/core.yaml`, e.g. `feat({module}):
+   Commit message from `core.yaml`, e.g. `feat({module}):
    logic`) and unlocks the next layer for that plugin. On a scope
    violation or a failing check, the task moves to `blocked` with a
    `blocked_reason` of `scope_violation` or `verification_failed`, and
@@ -250,22 +263,18 @@ change, undocumented CLI or manifest behavior, or a manifest shape that
 shifted from what an earlier layer assumed** — a `--dump-config` flag
 behaving differently than the last plugin's `wiring` layer found it, a
 `headless` exit code meaning something new, a `cordis.patch.yml` field
-that got renamed, anything where the pin in `workspace/package.json`
+that got renamed, anything where the pin in `package.json`
 turns out to not mean what it meant last time. Log it the moment it's
-hit, mid-layer, not after the fact from memory — the note is only useful
-if it's specific enough for `tweaker` to act on later. `tweaker` reads
-the friction log once, post-build, and files GitHub issues against
-`skyf0xx/hedgehog` from it — the same mechanic every Hedgehog core's
-loop skill uses for turning real build friction into upstream fixes.
+hit, mid-layer, not after the fact from memory. The rest of the friction
+procedure (what a good note carries, what `tweaker` does with it) is
+`hedgehog-orchestrating`'s "Friction log".
 
 ## Correction Protocol
 
-The same core mechanic every Hedgehog core's loop skill implements:
-stop, patch the upstream layer in place (checking the LSP tool's
-findReferences/incomingCalls against the symbol first, so a fix to one
-plugin's shared type doesn't miss a caller in another), fast-forward
-every dependent layer as its own commit, commit messages as the
-explanation, resume the loop. For this core specifically:
+The steps are `hedgehog-orchestrating`'s "Correction Protocol". Check
+the LSP tool's findReferences/incomingCalls against the symbol before
+patching, so a fix to one plugin's shared type doesn't miss a caller in
+another. For this core specifically:
 
 - **A correction ripples forward through one plugin's own chain.** A
   wrong `logic` layer for a given plugin ripples through that same
@@ -280,8 +289,8 @@ explanation, resume the loop. For this core specifically:
   every already-`complete` layer downstream of it in the same plugin's
   chain, in one call, so `wiring`/`smoke`/`bundle` don't need reopening
   individually. If a fix instead lands as a hand-authored commit outside
-  `hedgehog verify` (rare — prefer `reopen` first), `hedgehog db rebuild`
-  reconciles the graph state against what's actually committed afterward.
+  `hedgehog verify` (rare — prefer `reopen` first), record it with
+  `hedgehog reconcile confirm <task-id> --reason "<why>"`.
 - **A correction to one plugin does not ripple to other plugins.**
   Because layers are module-axis (independent per `{module}`), patching
   plugin A's `logic` layer has no effect on plugin B's tasks — don't
@@ -306,59 +315,32 @@ per-layer commits.
 
 ### Post-build entry
 
-Same shape as every Hedgehog core's Post-build entry: no task to stop,
-return to `tweaker` instead, every touched task stays `complete` and is
-fixed forward in new commits. This core routes here when something is
-wrong in a plugin that's already shipped past `bundle` (or past `join`)
-and the fix is small enough not to warrant reopening it as a full
-Correction Protocol pass through the live graph.
+The procedure is `hedgehog-orchestrating`'s "Post-build entry". This
+core routes here when something is wrong in a plugin that's already
+shipped past `bundle` (or past `join`).
 
-**New scope on this core usually isn't a post-build entry at all** —
-unlike a core with no module axis, this core has a natural home for a
-new plugin: a new intent, added via `planner`'s Re-entry pass, the same
-mechanism `full-stack-app` uses for a new domain module. Route "add
-another plugin" there, through Planning intake above, not through this
-section. Post-build entry is for fixing something already built, not for
-adding something new that the module axis already has room for.
+**New scope on this core isn't a post-build entry.** Another plugin is a
+new intent: it goes through this skill's Planning intake above, run again
+for that plugin, then `hedgehog plan` compiles its own six-layer chain.
+Post-build entry is for fixing something already built.
 
 ## Phase Transition Checks
 
-Before claiming a plugin's `scaffold` task, confirm `pnpm generate:tool
-<plugin-name>` has already produced `plugins/<plugin-name>/` — `scaffold`
-is confirming and adjusting that output, not creating it from nothing.
-If the intent exists but the generator hasn't run, run it first.
-
-Before claiming `logic`, confirm `scaffold` is `complete` per `hedgehog
-status` — `harness-eng` is filling in real logic against a scaffold
-that's already committed, not one still pending review.
-
-Before claiming `wiring`, confirm `logic` typechecks clean per its own
-landed commit — `wiring` connects a plugin whose logic is already
-correct; a `logic` layer that only looks done invites a `wiring`-layer
-failure that's actually a `logic`-layer bug wearing a different layer's
-blocked reason.
+`hedgehog claim` hands out a layer only once its dependency is
+`complete`, and `join` only after every plugin's `bundle`; none of that
+is re-checked by hand. Two inputs the graph cannot see:
 
 Before claiming `smoke`, confirm the smoke-prompt placeholder at
 `.hedgehog/dsh-smoke/<plugin-name>.md` has been replaced with a real
 task prompt — a `smoke` task claimed against the generator's original
 `TODO: replace...` placeholder will fail `verify` in a way that reads
 like a DSH problem when it's actually an unfinished `scaffold` step.
-Also confirm `DEEPSEEK_API_KEY` resolves (a `workspace/.env` copied from
+Also confirm `DEEPSEEK_API_KEY` resolves (a `.env` copied from
 `.env.example` and filled in is the usual path) — `smoke` is the first
 layer that boots a real DSH profile and calls the model, so a missing
 key surfaces here as `MISSING_CREDENTIAL`, not as a DSH or plugin bug.
 `hedgehog-bootstrap-deepseek-harness-core` raises this once at project
 start; re-check it here if that was skipped or the key has expired.
-
-Before claiming `bundle`, confirm `smoke` is `complete` — a plugin that
-hasn't proven it boots and completes a real task under DSH has no
-business being packed for distribution.
-
-Before claiming `join`, confirm **every** plugin currently in the graph
-has a `complete` `bundle` task — `join` is `once: true` and `exclusive:
-true` precisely because it's the one point that reasons about the whole
-workspace at once; claiming it against a partially-bundled workspace
-defeats the point of the check.
 
 ## Rules
 
@@ -422,7 +404,8 @@ see and use what was just built before deciding whether to tweak it or
 add more scope — the same offer the Visibility step makes per-plugin
 after `smoke`, re-surfaced here at whole-build completion.
 
-Then name **both** ways forward:
+Then name **both** ways forward (the shape follows `hedgehog-orchestrating`'s
+"Stop Condition"):
 
 - **Adjustments to what's built** — a `tweaker` session, in a *new* chat
   window, not a subagent call inside this one. Tell the user plainly:
@@ -436,14 +419,12 @@ Then name **both** ways forward:
   > friction log and ask me for feedback on the build, then take my
   > tweak requests one at a time.
 
-- **New scope** — another plugin. Since this core has a module axis, a
-  new plugin has a natural home: `planner`'s Re-entry pass adds a new
-  intent (Planning intake above), `hedgehog plan` compiles its own
-  six-layer chain, and The Loop resumes exactly as it did for the first
-  plugin. There's no "does the brief still hold" question the way a
-  brief-anchored core has to ask — a new plugin is additive by
-  construction, independent of every other plugin already built, save
-  for whatever `join` catches once its own `bundle` lands.
+- **New scope** — another plugin. This skill's Planning intake runs
+  again for that plugin, `hedgehog plan` compiles its own six-layer
+  chain, and The Loop resumes exactly as it did for the first plugin. A
+  new plugin is additive by construction, independent of every other
+  plugin already built, save for whatever `join` catches once its own
+  `bundle` lands.
 
 Don't start making tweaks or planning a new plugin in the current,
 already-large context; that's what the fresh session is for.

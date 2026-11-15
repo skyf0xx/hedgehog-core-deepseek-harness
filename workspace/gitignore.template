@@ -1,4 +1,5 @@
 node_modules/
+plugins/*/cordis.yml
 .env
 .hedgehog/hedgehog.db
 .hedgehog/hedgehog.db-*

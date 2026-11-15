@@ -15,7 +15,7 @@ drive building DSH plugins with Hedgehog's build discipline.
 - `skills/` — `hedgehog-dsh-loop` (claim/verify sequencing and
   friction-logging discipline), `hedgehog-bootstrap-deepseek-harness-core`
   (lands the workspace), and `dsh-plugin-shapes` (reference catalog of
-  the four DSH plugin shapes).
+  the catalogued DSH plugin shapes).
 - `CLAUDE.core.md` — fills a Hedgehog project's root `CLAUDE.md`
   `{{CORE_SECTION}}` placeholder for this core.
 - `hedgehog-core.yaml` — this package's manifest: name, flag, and which

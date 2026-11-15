@@ -7,7 +7,8 @@ description: Use when a new DeepSeek Harness (DSH) release appears and this repo
 
 This is an upgrade of **this repo**, the core package — not on a
 project built with it. `harness-eng` and the other shipped skills never
-invoke this one; it doesn't belong in `hedgehog-core.yaml`'s manifest.
+invoke this one; it is excluded from the published package's `files`
+and isn't in `hedgehog-core.yaml`'s manifest.
 
 **The goal is feature parity with the tag being adopted, every time —
 not damage control.** A bump that only confirms nothing broke and stops
@@ -22,8 +23,8 @@ the new tag actually allows, has not finished the job.
 
 DSH is pre-1.0 and moves fast. `workspace/package.json` pins
 `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to an exact tag rather
-than a caret range (`README.md`'s "Working on this core" section is the
-owning statement of this policy), and `dsh-plugin-shapes/SKILL.md`
+than a caret range (`ARCHITECTURE.md`'s "Working on this core" section is
+the owning statement of this policy), and `dsh-plugin-shapes/SKILL.md`
 additionally states its own event/service catalog is only guaranteed
 true as of the tag named in its "Verified against" line — **don't bump
 the pin without re-verifying that file first.**
@@ -106,8 +107,8 @@ the pin without re-verifying that file first.**
      removed, signature changed) — fix it.
    - **Parity additions**: a confirmed event, service, method, or shape
      the new tag's docs support that the catalog doesn't catalog yet,
-     including an "Out of scope, and why" entry whose stated blocker (a
-     thin doc, a missing example) the new tag has resolved — add it as a
+     including a subsystem the skill's "Not covered" section lists whose
+     blocker (a thin doc, a missing example) the new tag has resolved — add it as a
      new shape or extend an existing one, with the same doc-verified
      code and honesty-note treatment as the rest of the file. A `dsh`
      release note calling something out under "New Features" is a
@@ -125,9 +126,9 @@ the pin without re-verifying that file first.**
    outcome by only checking for corrections and skipping the parity
    pass — the two checks are separate and both required.
 
-   Also re-check the skill's "Out of scope, and why" section against
+   Also re-check the skill's "Not covered" section against
    this same live reading — a tag that adds a `ctx.*` service to a
-   subsystem currently listed as out of scope moves it into scope and
+   subsystem currently listed under "Not covered" moves it into scope and
    needs a new shape added, not just a version-line bump.
 
    **Never hardcode `dsh-plugin-shapes`'s doc list into this step.**
@@ -154,7 +155,7 @@ the pin without re-verifying that file first.**
    the `release` script in `package.json`, run manually here so the
    version bump commit can be batched with the pin change).
 
-7. **PR and merge**, per this repo's own process (`README.md`'s
+7. **PR and merge**, per this repo's own process (`ARCHITECTURE.md`'s
    "Working on this core" section): a change here is a release of this
    package. This repo's GitHub squash-merge is disabled — use a merge
    commit (`gh pr merge --merge`), not `--squash`. Wait for CI checks to
