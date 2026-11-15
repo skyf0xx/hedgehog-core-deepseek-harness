@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, Git-worktree, MCP-server-registration, or Session-projection shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern that replaced `ctx.agent` and the `agent.inbox` API that replaced the `Inbox` runtime class, for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API and subagent names, for per-Session model selection through `agent.model`, for conditional tool activation, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", "agent.model", "model selection", "ctx.mcpManager", "register an MCP server", "ctx.sessionProjections", "session projection", "LlmRequestPurposeMap", "when condition", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, Git-worktree, MCP-server-registration, or Session-projection shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern (there is no `ctx.agent`) and the `agent.inbox` API (there is no `Inbox` runtime class), for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API and subagent names, for per-Session model selection through `agent.model`, for conditional tool activation, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", "agent.model", "model selection", "ctx.mcpManager", "register an MCP server", "ctx.sessionProjections", "session projection", "LlmRequestPurposeMap", "when condition", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,53 +13,12 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.2-rc.3`.** Shapes 1-4 and the
-"Every plugin body" structural forms were checked against
-`docs/user/develop/framework/events.md` and `service.md`, with Shape 1's
-dynamic-registration and conditional-activation notes and Shape 2's
-tool-interception waterfalls checked against `docs/subsystems/tools.md`
-(and, for the model-side `toolUpdate` mode, the deprecated `agent/request`
-hook, and `LlmRequestPurposeMap`, `docs/subsystems/llm-streaming.md`). The
-Agent/Inbox section and Shapes 5-9 were checked against
-`docs/subsystems/core.md`, `docs/subsystems/agent-team.md`,
-`docs/subsystems/subagent.md`, `docs/subsystems/jobs.md`,
-`docs/subsystems/workflow.md`, `docs/subsystems/webhook.md`,
-`docs/subsystems/session-query.md`. Shape 10 was checked against
-`docs/subsystems/slots.md`, `docs/subsystems/sidebar-right.md`, and
-`docs/subsystems/client-resources.md` (plus
-`docs/upgrade-guide/v0.2.1-rc.4/reasoning-body-props/guide.md` for the
-reasoning-body Slot's text fields, and
-`docs/upgrade-guide/v0.2.2-alpha.2/context-menu-target/guide.md`,
-`css-anchored-menus/guide.md`, and
-`v0.2.2-alpha.3/chat-process-activity-context/guide.md` for the Client UI
-migrations). Shape 11 was checked against `docs/subsystems/core.md`'s
-`ctx.agentPresets` section. Shape 12 was checked against
-`docs/subsystems/schedule.md` and
-`docs/upgrade-guide/v0.2.2-alpha.2/schedule-remote-host-tasks/guide.md`, and
-Shape 13 against `docs/subsystems/user-questions.md`. Shape 14 was checked
-against `docs/subsystems/ptc-runtime.md` and `docs/subsystems/sandbox.md`.
-Shape 15 was checked against `docs/subsystems/working-directory.md` and
-Shape 16 against `docs/subsystems/worktrees.md`. Shape 17 was checked
-against `docs/subsystems/mcp.md` and Shape 18 against
-`docs/subsystems/session-projection.md` (plus
-`docs/upgrade-guide/v0.2.1-rc.2/session-projection-handles/guide.md` and
-`docs/upgrade-guide/v0.2.2-alpha.2/projection-snapshot-scope/guide.md`).
-The "Plugin state records" note was checked against
-`docs/subsystems/session.md`'s "Plugin records" section, and Shape 6's
-naming rules against `docs/upgrade-guide/v0.2.2-alpha.3/subagent-names/guide.md`.
-`docs/subsystems/otel.md`, `docs/subsystems/credentials.md`,
-`docs/subsystems/scope.md`, `docs/subsystems/boot.md`'s "Market records"
-section and `ctx.actionCards` section, and `docs/subsystems/session.md`'s
-"Session-log upload exclusions" section were read at this tag and
-excluded — see "Out of scope, and why". All of the above plus the release
-notes for every version between `dsh-v0.2.1-rc.5` (this file's previously
-verified tag) and `dsh-v0.2.2-rc.3` (`v0.2.2-alpha.2`, `alpha.3`, `rc.1`,
-`rc.2`, `rc.3`) and every `docs/upgrade-guide/v0.2.2-*` guide were read at
-the new tag, which `workspace/package.json` pins `@deepseek-ai/dsh` and
-`@deepseek-ai/dsh-tools` to.
+**Verified against DSH tag `dsh-v0.2.2-rc.3`**, the tag `package.json` pins
+`@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to. Each shape cites the
+`docs/` files it was checked against.
 
 A subset of `docs/` ships inside the pinned package at
-`workspace/node_modules/@deepseek-ai/dsh/docs/` after `pnpm install`
+`node_modules/@deepseek-ai/dsh/docs/` after `pnpm install`
 (`subsystems/tools.md`, `slots.md`, `session-projection.md`, and
 `user/develop/framework/events.md` among them; `subsystems/mcp.md` is not).
 Read a cited doc there first; read one missing there from the pinned tag on
@@ -68,123 +27,21 @@ revision this skill's catalog was checked against — every confirmed-event,
 confirmed-signature, and "doesn't exist" claim below is only guaranteed
 true as of that tag. A re-pin to a newer `rc` or stable tag needs this
 skill's claims re-checked against the new tag's own docs — for both
-corrections and feature parity, per `dsh-pin-upgrade/SKILL.md` — before the
+corrections and feature parity — before the
 pin line above is updated to match; don't bump the pin in
-`workspace/package.json` without also re-verifying this file.
+`package.json` without also re-verifying this file.
 
-## Out of scope, and why
+## Not covered
 
-Not every subsystem DSH documents is plugin-authoring surface. Checked and
-excluded at this tag:
-
-- **`sdk-minimal`/`minimal` default-tool-set changes** (v0.1.5-alpha.2's
-  "Minimal-profile default tools" note: Web `minimal` and Python
-  `sdk-minimal` are now shell-only by default, with `str_replace_editor`
-  requiring explicit opt-in) — this is bundle/profile composition
-  (`cordis.patch.yml`, `dsh plugin --profile`), the same bundle/manifest
-  wrapper this skill already excludes below as the generator's concern, not
-  a `ctx.*` service or plugin-authoring DSL change. A plugin author's Shape
-  1-9 code is unaffected; only which tools a given profile preloads by
-  default changed.
-- **`ctx.pluginMarket` (`docs/subsystems/boot.md`'s "Market records",
-  `docs/user/guide/plugin-market.md`)** — the Custom plugin indexes bundle's
-  index reader, whose methods are `@Remote` calls the Plugins page's
-  Discover tab makes; installation still goes through the plugin manager.
-  Publishing an index is a static JSON index file, not plugin code. The one
-  part that touches a plugin's own package — `engines.dsh` — is the bundle
-  manifest's concern, which the tool-plugin generator's `package.json`
-  template declares.
-- **`ctx.actionCards` (`docs/subsystems/boot.md`)** — the experimental
-  action-card service behind Personalized recommendations: a kind registry
-  (`register(kind)`), a Session-log decision writer (`record(agent,
-  decision)`), a reader (`view(session)`), and the `@Remote` `act` the Web
-  card calls. `ActionCardKind`'s skill, details-schema, verb, and handler
-  fields are owned by `packages/experimental/action-cards/README.md`, which
-  this skill did not read. A plugin that needs its own card kind reads that
-  README first and logs friction via `hedgehog friction add` if it does not
-  resolve the kind's shape.
-- **`ctx.sessionLogDeepSeek.registerExclusion()` (`docs/subsystems/session.md`'s
-  "Session-log upload exclusions")** — a synchronous predicate over
-  `{ sessionId, purpose? }` that keeps a request's Session log out of the
-  DeepSeek log-contribution upload. It governs telemetry upload eligibility,
-  not plugin behavior; a plugin whose auxiliary requests must never be
-  uploaded registers one and keeps its predicate side-effect-free.
-- **MCP client pagination-cursor rejection** (v0.1.5-alpha.2 bug fix) —
-  internal robustness of `dsh-mcp-client` consuming a misbehaving external
-  MCP server, not a `ctx.*` surface a DSH plugin author calls.
-- **`docs/subsystems/scope.md`** (`ScopeKey`, `Scoped<T>`, `ScopeLayer`) —
-  a dependency-free internal library primitive that `agent`, `session`,
-  and other registries build per-agent scoping on top of. It has no Cordis
-  service of its own (no `ctx.scope`) and nothing a plugin author calls
-  directly; the shapes below that need scoping (Shape 2's `ctx.on`, Shape
-  4's `Service` subclass) already cover the plugin-visible surface.
-- **`ctx.schedule` is now catalogued as Shape 12**, below — `schedule.md`
-  gained a generated Cordis API section (`ScheduleService`, the
-  `schedule/changed` event) whose `create` method is not `@Remote`-only.
-  Its Web task views, catalog, and delivery-history UI remain app surface.
-- **`ctx.otel` (`docs/subsystems/otel.md`)** — a shared OTel transport
-  factory (`createEventReporter`, `createSessionLogReporter`) consumed by
-  the Host's product- and Session-telemetry adapters. It's telemetry
-  infrastructure rather than a capability a feature plugin builds on, and
-  its `EventLogOptions`/`SessionLogOptions` shapes are owned by
-  `packages/telemetry/otel/README.md`, not the doc. A plugin that
-  genuinely needs its own telemetry channel should read that README first
-  and log friction via `hedgehog friction add` if it doesn't resolve the
-  options shape.
-- **`ctx.authorization`, `ctx.credentials`, `ctx.credentialsController`,
-  `ctx.deepseekAccount` (`docs/subsystems/credentials.md`)** — the Host's
-  credential-resolution and DeepSeek Platform account seams (sign-in,
-  balance, account notifications, token rejection). `ctx.deepseekAccount`
-  is a concrete service owning browser login, stored credentials, and the
-  `account` Remote namespace; the others are provider seams the Host
-  composition fills and `@Remote` controllers the Web app's settings UI
-  calls. No doc-given pattern exists for a feature plugin registering
-  against them.
-- **LLM adapter authoring (`docs/subsystems/llm-streaming.md`,
-  `docs/user/develop/practice/llm-adapter.md`)** — including the
-  `toolUpdate` model-info field behind `dsh-v0.1.7-rc.2`'s "dynamic tool
-  additions without invalidating KV Cache" release note, model badges, and
-  the pi-ai-only `llm-pi-ai/request-headers` waterfall (dynamic request
-  headers from Session identity and purpose, owned by
-  `packages/llm/llm-pi-ai/README.md#request-headers`). Writing an
-  `LlmAdapter` is its own practice guide with its own abstract class;
-  this skill catalogs only its effect on tool plugins (Shape 1's
-  dynamic-registration note) and the `LlmRequestPurposeMap` declaration a
-  plugin making auxiliary requests needs (Shape 2).
-- **The Plugin Manager page and runtime dependency resolution/unloading**
-  (installing, configuring, and live enabling/disabling plugins from the
-  Web app; Creator mode installing persistent plugins through Plugin
-  Manager rather than its own dynamic definition/execution tools, with its
-  guidance in the single `dsh-doc` skill; Auto review enabled from the
-  Plugins page, Inspector shipped as a separately installed plugin rather
-  than by default; the `dsh` command bundled with macOS/Windows Desktop for
-  plugin management; `BundleInfo.update` and third-party bundle updates;
-  official bundle lists exported by `@deepseek-ai/dsh-official-bundles`) — this
-  is the Web app's end-user plugin install/enable/disable surface and
-  Creator mode's own scratch-authoring workflow, the same bundle/profile-
-  composition category as the `sdk-minimal` item above, not a `ctx.*`
-  service or plugin-authoring DSL change. No doc in this skill's citation
-  list documents a Cordis surface for it. A
-  plugin's own `apply(ctx)` body, `cordis.patch.yml` entry, and shape
-  DSL are unaffected by how the Web app or Creator mode installs it
-  at runtime.
-- **`ctx.agentPresets` is now catalogued as Shape 11**, below — see that
-  section for what's confirmed and what's still thin.
-- **`ctx.jobController` (`JobController`, `docs/subsystems/jobs.md`,
-  distinct from the already-catalogued Shape 7 `ctx.jobs`)** — its own
-  doc calls it the "Host service backing the generated `ctx.remote.job`
-  namespace," and its `kill` method is framed explicitly as killing "one
-  background job **on a human's behalf**." All three of its methods
-  (`list`, `follow`, `kill`) are `@Remote`-decorated, the same
-  client-facing-endpoint marker Shape 10's `useResource`/slot props
-  material uses for Web-app-consumed surface rather than plugin-authored
-  DSL. This is the Web app's own end-user job-monitoring/kill UI talking
-  to the job registry, the same category as the Plugin Manager item
-  above, not a capability a plugin registers or calls to build its own
-  behavior. A plugin implementing or consuming background jobs uses
-  Shape 7's `ctx.jobs` instead. Re-check this file if a future tag turns
-  any of `ctx.jobController`'s methods into something a plugin can
-  register against rather than only a Remote-consumed read/kill surface.
+This skill catalogs plugin-facing `ctx.*` shapes only. Bundle and profile
+composition (`cordis.patch.yml`, `dsh plugin --profile`, default tool
+sets), the Plugin Manager and plugin market, telemetry and credential
+seams (`ctx.otel`, `ctx.credentials`, `ctx.deepseekAccount`), `ctx.scope`,
+`ctx.actionCards`, `ctx.jobController`, `ctx.sessionLogDeepSeek`, LLM
+adapter authoring, and MCP client internals have no shape here. A plugin
+that needs one reads that subsystem's own doc or package README first and
+logs friction via `hedgehog friction add` if the shape still does not
+resolve.
 
 ## v0.1 generator coverage: tool shape only
 
@@ -249,9 +106,9 @@ DSH's own docs put it plainly: "Function form is sufficient in most
 cases. Use class form when the plugin provides a service to other
 plugins."
 
-The four shapes below are matches of an *intent* — what the plugin is
-for — onto these structural forms, not a fourth and fifth structural
-option beyond the three above.
+The shapes below are matches of an *intent* — what the plugin is
+for — onto these structural forms, not additional structural options
+beyond the three above.
 
 ## Shape 1: Tool plugin
 
@@ -361,11 +218,8 @@ export function apply(ctx: Context) {
   })
 }
 ```
-This is a chore-level rename in the underlying framework (the previous,
-unconfirmed `agent/session-start` name some earlier tags' release notes
-described never appeared in this skill's catalog, so there is nothing to
-migrate here) — treat `agent/created` as the confirmed name going
-forward. `agent/disposed` (emit mode, fires after driver quiescence and
+`agent/created` is the confirmed name; `agent/session-start` is
+unconfirmed. `agent/disposed` (emit mode, fires after driver quiescence and
 scoped-registration unwind) is also confirmed in the same doc, for the
 symmetric teardown case.
 
@@ -529,9 +383,9 @@ worked example:
 
 **Honesty note:** treat `agent.followup()` and `agent.steer()` as
 confirmed to exist by name; their exact signatures are now resolved by
-the Agent-passing section below. `ConversationNodeDefinition` named here
-in earlier tags does not appear in `dsh-v0.1.5-alpha.2`'s `slots.md` —
-the real, doc-verified Web Client contribution mechanism as of this tag
+the Agent-passing section below. `ConversationNodeDefinition` does not
+appear in `slots.md` —
+the real, doc-verified Web Client contribution mechanism
 is the general `ctx.slots` registry and, for the right-Sidebar
 specifically, `ctx.sidebarRightTabs`, both catalogued in full as Shape
 10, below. Use Shape 10 for any new UI-plugin work rather than this
@@ -599,21 +453,17 @@ it's the real API; use the `Service` subclass form, and if a future task
 genuinely needs a lower-level provisioning call the docs don't cover, log
 friction via `hedgehog friction add` rather than guessing at its shape.
 
-## Agent-passing and `agent.inbox` (replaces `ctx.agent` and `Inbox`)
+## Agent-passing and `agent.inbox`
 
-**As of `dsh-v0.1.5-alpha.1`, `ctx.agent` no longer exists.** Per that
-release's own notes ("插件 Agent API 调整" / "Agent plugin API changes"):
-"Remove `ctx.agent` and require callers to pass the Agent explicitly."
+**`ctx.agent` does not exist.** Callers pass the Agent explicitly.
 Confirmed against `docs/subsystems/core.md`'s `ctx.agents` (`AgentRegistry`)
-section at that tag — there is no `ctx.agent` getter anywhere in it. A
-plugin written against an older DSH rc that reads `ctx.agent` will fail to
-compile against the pinned tag; that's this change, not a regression to
-work around.
+section — there is no `ctx.agent` getter anywhere in it. A plugin that
+reads `ctx.agent` fails to compile against the pinned tag.
 
-**What replaced it — two ways to get an `Agent`, per `docs/subsystems/core.md`:**
+**Two ways to get an `Agent`, per `docs/subsystems/core.md`:**
 
-1. **Explicit parameter.** Any call that used to read `ctx.agent` now
-   takes the `Agent` as an argument instead. This is the pattern
+1. **Explicit parameter.** A call that needs an Agent takes it as an
+   argument. This is the pattern
    throughout every doc-verified service below (`ctx.agentTeams`,
    `ctx.subagents`, `ctx.workflowEngine`) — every method that needs an
    acting agent takes `agent: Agent` explicitly rather than reading it
@@ -637,7 +487,7 @@ work around.
    authorization" — don't use either method as an authorization check;
    they're for attribution only.
 
-**Confirmed as of `dsh-v0.1.7-rc.1`: `ctx.agents` also creates and looks
+**`ctx.agents` also creates and looks
 up agents**, not just attribution reads. A plugin that needs to spin up a
 fresh agent (a background-job or workflow plugin's own subordinate agent,
 for example) has a doc-verified path:
@@ -783,7 +633,7 @@ a root Session. Confirmed against `docs/subsystems/agent-team.md`'s
 generated Cordis surface (`TeamService`, `packages/team/agent-team`). Team
 membership is the ordinary subagent tree (Shape 6): teammates are named
 subagents, and members exchange messages through
-`ctx.subagents.sendMessage`. The Team service no longer spawns, messages,
+`ctx.subagents.sendMessage`. The Team service does not spawn, message,
 interrupts, or rosters members, and task changes do not wake idle agents
 or end inbox waits — send an explicit message when an agent must act on a
 task update.
@@ -1018,7 +868,7 @@ events (`registered`, `progress`, `stopping`, `removed`, `settled`) and
 `output` events (id + new ring total only, so an observer schedules its
 own `readAt`). "Access control relies on owner authorization, not id secrecy," per the
 doc; ids are `<kind>-<short-uuid>` (16 lowercase hex characters after the
-kind) as of `dsh-v0.2.1-alpha.3`, no longer the sequential `<kind>-N`. A job controller (something that can
+kind), not sequential. A job controller (something that can
 read/stop jobs for a scope of owners) calls `attachController(name)` —
 `start` refuses work for an owner no attached controller serves.
 
@@ -1119,8 +969,7 @@ read-only, live-preferred query service over the session corpus:
 `observeSession(sessionId, options)`, `searchSessions(request, exec?)`,
 `searchEvents(request, exec?)`, `listSessions(signal?)`,
 `readSession(sessionId)`, `filterSessions(filters, signal?)`,
-`readTitle(sessionId, signal?)`, `listEvents(sessionId)`. As of
-`dsh-v0.1.6-alpha.1` the doc also confirms `readTitleSnapshot(...)` and
+`readTitle(sessionId, signal?)`, `listEvents(sessionId)`. The doc also confirms `readTitleSnapshot(...)` and
 `readTitleSnapshots(...)` (title plus source header, and title-folding
 across a cancellable multi-session observation), `filterEvents(...)`
 (semantic event search with provider-independent filters), `readSurface(...)`
@@ -1140,7 +989,7 @@ linked doc or its source file before constructing one, and log friction
 via `hedgehog friction add` if a needed shape isn't covered at the depth
 you need.
 
-**Plugin state records — confirmed as of `dsh-v0.2.1-alpha.2`, per
+**Plugin state records, per
 `docs/subsystems/session.md`'s "Plugin records" section.** New Session
 state-record APIs let an **experimental** plugin write and read its own
 append-only records in the Session log, independent of the `SessionEventMap`
@@ -1182,10 +1031,9 @@ exact call signatures (which service hosts them, whether they take a
 A plugin that contributes UI into the built-in Web Client — a sidebar
 panel, a conversation header action, a right-Sidebar tab type — rather
 than registering a tool, hook, or backend service. Confirmed against
-`docs/subsystems/slots.md`'s generated Client surface. This resolves
-Shape 3's former "Sidebar UI"/`ConversationNodeDefinition` honesty note:
-as of `dsh-v0.1.5-alpha.2`, this is a real, doc-verified, `ctx.*`-backed
-extension point, not an app-runtime-only feature.
+`docs/subsystems/slots.md`'s generated Client surface. This is a real,
+doc-verified, `ctx.*`-backed extension point, not an app-runtime-only
+feature.
 
 `ctx.slots` is the Web Client's typed React composition registry. A
 feature plugin contributes a component into a named slot with
@@ -1257,7 +1105,7 @@ resource), `usePanelInfo` (every scope), and — for `session`/`session-maybe` �
 `inputActions`.
 
 **The shipped Conversation hierarchy** (per `slots.md`'s "Conversation
-hierarchy", which as of `dsh-v0.2.2-rc.3` lists only the Conversation
+hierarchy", which lists only the Conversation
 paths — "unrelated shell positions are omitted") is the authoritative list
 of registrable Conversation slot keys — a plugin registers only into a key
 that appears here or in the generated catalog; guessing a plausible-sounding
@@ -1397,7 +1245,7 @@ excludes it) — an exhaustive `switch` or `Record<ProcessActivity, …>` needs
 a `context` branch. On macOS Desktop, a custom overlay covering a draggable
 header declares its region (`data-window-drag-exclude` on its visible
 viewport, or `data-window-drag-controls` on a control container); interactive
-controls elsewhere no longer get `no-drag` automatically.
+controls elsewhere do not get `no-drag` automatically.
 
 **Reasoning body text fields (`dsh-v0.2.1-rc.4`).** A contribution to
 `conversation.chat.reasoning.body` receives the model output in `rawText`;
@@ -1409,18 +1257,17 @@ repeating Chat's display processing. The Factory still accepts `text`,
 `running`, and optional `labels`.
 
 The sidebar, settings, plugin-page, right-sidebar, and `shell.*` branches
-that earlier tags listed in this tree (`sidebar.panellist`,
+(`sidebar.panellist`,
 `sidebar.workspaces.*`, `settings.*`, `plugins.*`, `rightbar.session`,
 `sidebar.right.pane.tab`, `shell.bottom`/`shell.leading`/`shell.overlay`)
-are no longer enumerated in `slots.md`; the generated Client inspect catalog
-now "covers all shell branches" and is the only exhaustive source for them.
+are not enumerated in `slots.md`; the generated Client inspect catalog
+"covers all shell branches" and is the only exhaustive source for them.
 Treat a key from those branches as unconfirmed until `cordis_inspect
 what:"client"` or `pnpm run gen-client-catalog` shows it.
 
 Global panels register through `sidebar.panellist` and `main` (the
-`dsh-v0.1.5-alpha.2` "Web plugin panel API changes" release note moved the
-former root-level `conversation` slot to the `conversation` key under
-`main`); at `dsh-v0.2.2-rc.3` `slots.md` shows `root [AppFrame]` →
+`conversation` slot is the `conversation` key under `main`);
+`slots.md` shows `root [AppFrame]` →
 `main[key=conversation]` → `main.conversation` as the Conversation path's
 start and defers every other branch to the generated catalog. Run
 `pnpm run gen-client-catalog`'s generated Client inspect catalog (or
@@ -1569,12 +1416,10 @@ provider's value shape.
 ## Shape 11: Agent preset plugin (`ctx.agentPresets`)
 
 A plugin that declares a reusable, YAML-backed Agent composition — the
-mechanism `dsh-v0.1.7-rc.1`'s release notes describe as "Agent presets
-declared and installed through plugin bundles." Confirmed against
+mechanism DSH describes as "Agent presets declared and installed through
+plugin bundles." Confirmed against
 `docs/subsystems/core.md`'s `ctx.agentPresets` (`AgentPresetRegistry`)
-section, newly complete enough at this tag to catalog (earlier tags gave
-method signatures without enough surrounding context to responsibly
-document a worked example):
+section:
 
 ```ts
 export const inject = ['agentPresets']
@@ -1802,12 +1647,11 @@ questions) is Client read surface, not transcribed here beyond its name.
 
 ## Shape 14: PTC provider / sandbox-confinement plugin (`ctx.ptcRuntime`, `ctx.sandbox`, `ctx.sandboxPolicy`)
 
-**New to this skill as of `dsh-v0.2.1-alpha.2` (updated at `alpha.3`).** Three more abstract-seam
+Three abstract-seam
 services, confirmed against `docs/subsystems/ptc-runtime.md` and
 `docs/subsystems/sandbox.md` — the same class-form pattern as Shape 4,
-applied to PTC execution and process confinement. `dsh-v0.2.1-alpha.2`'s
-release notes call out that a custom PTC composition now requires the
-`sandbox` and `sandboxPolicy` services, not just `ptcRuntime`, so a plugin
+applied to PTC execution and process confinement. A custom PTC composition
+requires the `sandbox` and `sandboxPolicy` services, not just `ptcRuntime`, so a plugin
 providing its own PTC backend declares all three as class-form services (or
 `inject`s the other two if it only consumes them):
 
@@ -1855,7 +1699,7 @@ with `SandboxPreparationError` (`SANDBOX_PREPARATION_FAILED`,
 `SANDBOX_INVALID_TEMP_ROOT`) when the provider cannot prepare host state
 for the mode.
 
-**In-memory state (`dsh-v0.2.1-alpha.3`).** `PtcRunRequest` gained an
+**In-memory state (`dsh-v0.2.1-alpha.3`).** `PtcRunRequest` takes an
 optional `stateOwner?: object`: omission requests a fresh one-shot
 environment, and a consumer passing an owner must `await
 runtime.release(owner)` when that owner ends (cleanup failures reject that
@@ -1884,7 +1728,7 @@ caution Shapes 7/8's abstract-seam framing gets.
 
 ## Shape 15: Session working-directory plugin (`ctx.workingDirectory`)
 
-**New to this skill as of `dsh-v0.2.1-alpha.2`.** A plugin that reads or
+A plugin that reads or
 changes a Session's active working directory — the `working_directory`
 tool's own backing service, confirmed against
 `docs/subsystems/working-directory.md`'s generated Cordis surface. A
@@ -1934,8 +1778,7 @@ directory unchanged.
 
 ## Shape 16: Git worktree plugin (`ctx.worktrees`)
 
-**New to this skill as of `dsh-v0.2.1-alpha.2`, and an experimental
-package** (`packages/experimental/worktree`) — confirmed against
+**An experimental package** (`packages/experimental/worktree`) — confirmed against
 `docs/subsystems/worktrees.md`'s generated Cordis surface. A plugin that
 creates a retained Git worktree (a fresh branch and checkout) for an Agent
 to work in, then switches that Session's effective directory into it via
@@ -2000,7 +1843,7 @@ plugin can clean those up itself without re-reading that section.
 
 ## Shape 17: MCP server registration plugin (`ctx.mcpManager`)
 
-**New to this skill as of `dsh-v0.2.2-rc.3`.** A plugin that brings its own
+A plugin that brings its own
 MCP server — the server's tools then reach the model through the ordinary
 MCP client path — without asking the user to configure it in Settings.
 Confirmed against `docs/subsystems/mcp.md`'s generated Cordis surface
@@ -2042,7 +1885,7 @@ row per server in `cordis.patch.yml`, which is bundle composition.
 
 ## Shape 18: Session projection plugin (`ctx.sessionProjections`)
 
-**New to this skill as of `dsh-v0.2.2-rc.3`.** A plugin that derives
+A plugin that derives
 per-Session state from the Session log — a counter, a status the Web
 Client shows, a fold another service reads — as a pure, synchronous unit
 the framework drives on every committed event. Confirmed against
@@ -2103,11 +1946,10 @@ read. Confirm both before relying on them.
 - This skill catalogs shape and DSL only — it doesn't judge which shape
   fits a given plugin intent. That call belongs to `harness-eng`,
   informed by the task at hand.
-- **`ctx.agent` does not exist at the pinned tag.** Any plugin body that
-  reads `ctx.agent` is either targeting a stale rc or was written from
-  memory of one — pass the `Agent` explicitly instead, or use
+- **`ctx.agent` does not exist at the pinned tag.** A plugin body that
+  reads `ctx.agent` was written from memory of an older rc — pass the `Agent` explicitly instead, or use
   `ctx.agents.currentInitiator()`/`requireInitiator()`. See "Agent-passing
-  and `agent.inbox`" above before touching any call that used to assume
+  and `agent.inbox`" above before touching any call that assumes
   `ctx.agent`.
 - **Don't switch models from `agent/request`.** The hook is deprecated;
   record a Session selection with `agent.model.select(...)` instead (see
@@ -2137,41 +1979,27 @@ read. Confirm both before relying on them.
 - Tool-shape plugins go through `pnpm generate:tool <name>` first; this
   skill's Shape 1 snippet is for extending or hand-checking generated
   output, not for hand-authoring a tool plugin from scratch.
-- Shape 5 (Agent Team) was reshaped at `dsh-v0.2.2-rc.3` from a roster
-  and mailbox service into a task board over the subagent tree, and
-  Shape 6's tree and naming model is new at the same tag; Shapes 7 (Jobs)
-  and 8 (Workflow) are abstract seams by the docs' own description, not
-  fixed concrete APIs. Treat all four as more likely to move between tags
-  than Shapes 1-4's. Shape 10 (Web
-  Client slots) is new to this skill as of `dsh-v0.1.5-alpha.2` and still
-  has a large surface — the `client-resources.md` provider contract is
-  now confirmed as of `dsh-v0.1.7-rc.1`, but the full owner-props table
-  per slot key is still not exhaustively transcribed — treat remaining
-  gaps there the same as any other honesty-note gap, not as settled.
-  Shape 11 (Agent presets) is new as of `dsh-v0.1.7-rc.1` and leaves
-  `PresetDefinition`'s field shape unresolved — treat it the same way.
-  The `ctx.agents.create`/`resume` and `ctx.agentLoop` surface added to
-  the Agent-passing section at the same tag likewise leaves
-  `CreateAgentOptions`/`ResumeAgentOptions`/`AgentHandle`/`AgentFactory`
-  unresolved beyond their method signatures. Shape 12 (Schedule) moved to
-  a Host-wide task API at `dsh-v0.2.2-rc.3`, and Shape 13's timed
-  questions sit behind an experimental, manually enabled mode — treat
-  both as more likely to move between tags than Shapes 1-4. Shape 14 (PTC
-  provider / sandbox) is new as of `dsh-v0.2.1-alpha.2` and leaves its
-  request/result/policy types unresolved beyond method signatures — treat
-  it the same way. Shape 15 (Working directory) is new at the same tag and
-  is not flagged experimental in its own doc, but is still thin beyond the
-  three confirmed methods. Shape 16 (Git worktrees) is new at the same tag
-  and sits on a package its own doc calls experimental, shipped switched
-  off by default — treat it with the same caution as Shape 5. The Plugin
-  state records note (new at the same tag, between Shapes 9 and 10) is
-  explicitly experimental-package surface with an unresolved
-  caller-restriction question — treat it as thinner than any numbered
-  shape until that README is read. Shapes 17 (MCP server registration) and
-  18 (Session projections) are new as of `dsh-v0.2.2-rc.3`; Shape 17 leaves
+- Stability varies by shape. Shapes 1-4 are the most settled. Shape 5
+  (Agent Team), Shape 6's tree and naming model, Shapes 7 (Jobs) and 8
+  (Workflow, abstract seams by the docs' own description), Shape 12
+  (Schedule) and Shape 13's timed questions (behind an experimental,
+  manually enabled mode) are more likely to move between tags. Shape 10
+  (Web Client slots) has a large surface: the `client-resources.md`
+  provider contract is confirmed, but the full owner-props table per slot
+  key is not exhaustively transcribed. Shape 11 (Agent presets) leaves
+  `PresetDefinition`'s field shape unresolved. The `ctx.agents.create`/
+  `resume` and `ctx.agentLoop` surface leaves `CreateAgentOptions`/
+  `ResumeAgentOptions`/`AgentHandle`/`AgentFactory` unresolved beyond
+  their method signatures. Shape 14 (PTC provider / sandbox) leaves its
+  request/result/policy types unresolved beyond method signatures. Shape
+  15 (Working directory) is thin beyond its three confirmed methods.
+  Shape 16 (Git worktrees) sits on an experimental package shipped off by
+  default. The Plugin state records note is experimental-package surface
+  with an unresolved caller-restriction question, thinner than any
+  numbered shape until that README is read. Shape 17 leaves
   `McpServerRegistration` unresolved, and Shape 18's unit contract is
-  confirmed but its package README is unread — treat both with the same
-  caution as Shape 14.
+  confirmed but its package README is unread. Treat every gap as a gap,
+  not as settled.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
   the same across every shape and is the generator's concern, not this
