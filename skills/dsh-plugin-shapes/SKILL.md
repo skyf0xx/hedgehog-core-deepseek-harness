@@ -33,15 +33,30 @@ pin line above is updated to match; don't bump the pin in
 
 ## Not covered
 
-This skill catalogs plugin-facing `ctx.*` shapes only. Bundle and profile
-composition (`cordis.patch.yml`, `dsh plugin --profile`, default tool
-sets), the Plugin Manager and plugin market, telemetry and credential
-seams (`ctx.otel`, `ctx.credentials`, `ctx.deepseekAccount`), `ctx.scope`,
-`ctx.actionCards`, `ctx.jobController`, `ctx.sessionLogDeepSeek`, LLM
-adapter authoring, and MCP client internals have no shape here. A plugin
-that needs one reads that subsystem's own doc or package README first and
-logs friction via `hedgehog friction add` if the shape still does not
-resolve.
+This skill catalogs plugin-facing `ctx.*` shapes only. Each item below
+has no shape, for the blocker named. A plugin that needs one reads that
+subsystem's own doc or package README first and logs friction via
+`hedgehog friction add` if the shape still does not resolve.
+
+- Bundle and profile composition (`cordis.patch.yml`, `dsh plugin
+  --profile`, default tool sets): the generator's concern, not a `ctx.*`
+  service.
+- Plugin Manager and plugin market (`ctx.pluginMarket`): Web app
+  install/enable surface and `@Remote` calls, not plugin-authored DSL.
+- `ctx.otel`: telemetry infrastructure whose option shapes live in its
+  package README, which this skill has not read.
+- `ctx.credentials`, `ctx.credentialsController`, `ctx.deepseekAccount`:
+  Host seams with no doc-given pattern for a feature plugin.
+- `ctx.scope`: an internal primitive with no Cordis service of its own.
+- `ctx.actionCards`: its kind fields are owned by a package README this
+  skill has not read.
+- `ctx.jobController`: a `@Remote` read/kill surface for the Web app; a
+  plugin uses `ctx.jobs` (Shape 7).
+- `ctx.sessionLogDeepSeek`: governs telemetry upload eligibility, not
+  plugin behavior.
+- LLM adapter authoring: its own practice guide and abstract class.
+- MCP client internals: internal to `dsh-mcp-client`, not a `ctx.*`
+  surface.
 
 ## v0.1 generator coverage: tool shape only
 

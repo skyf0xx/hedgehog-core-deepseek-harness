@@ -20,7 +20,9 @@ degenerate case `landing-page`'s loop implements — which is why
 independently per plugin, a single `hedgehog claim` call can return
 **multiple** ready tasks at once (e.g. `logic` for one plugin and
 `scaffold` for another, claimed together) — never assume `--count N`
-returns exactly one task the way a linear chain's loop would.
+returns exactly one task the way a linear chain's loop would. Two
+plugins' `scaffold` tasks are never claimed together: both scopes include
+the shared `README.md` and `pnpm-lock.yaml`, so they serialize.
 
 One agent, `harness-eng`, builds every layer for every plugin — there is
 no per-layer or per-stage agent handoff the way other cores split
