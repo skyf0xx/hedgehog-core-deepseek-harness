@@ -1,6 +1,6 @@
 ---
 name: dsh-plugin-shapes
-description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, Git-worktree, MCP-server-registration, or Session-projection shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern (there is no `ctx.agent`) and the `agent.inbox` API (there is no `Inbox` runtime class), for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API and subagent names, for per-Session model selection through `agent.model`, for conditional tool activation, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", "agent.model", "model selection", "ctx.mcpManager", "register an MCP server", "ctx.sessionProjections", "session projection", "LlmRequestPurposeMap", "when condition", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
+description: Use whenever `harness-eng` is writing a DSH plugin's own TypeScript — deciding whether it's a tool, hook, UI/slot, protocol-driver/service, agent-team, subagent, job, workflow, webhook, session-query, Web Client slot/panel, client-resource-provider, agent-preset, scheduled-reminder, user-question, PTC-provider/sandbox, working-directory, Git-worktree, MCP-server-registration, Session-projection, or web search/fetch provider shape, or filling in that shape's DSL. Also the reference for the Agent-passing pattern (there is no `ctx.agent`) and the `agent.inbox` API (there is no `Inbox` runtime class), for spawning or resuming an agent via `ctx.agents`/`ctx.agentLoop`, for the unified `ctx.subagents.startActivation` delegation API and subagent names, for per-Session model selection through `agent.model`, for conditional tool activation, and for experimental plugin-owned Session state records (`appendPluginRecord`/`pluginRecordOf`). Trigger on "write the plugin", "register a tool", "hook into tools/pre-execute", "wire a service", "class-form plugin", "ctx.on", "ctx.tools.register", "ctx.agent", "agent.inbox", "agent/created", "spawn a subagent", "ctx.subagents", "startActivation", "ctx.agentTeams", "ctx.jobs", "ctx.workflowEngine", "ctx.webhookRuntime", "ctx.sessionQuery", "ctx.slots", "ctx.sidebarRightTabs", "ctx.sidebarRight", "ctx.resources", "ctx.agentPresets", "ctx.agents.create", "ctx.agentLoop", "ctx.agentDefaultModel", "agent preset", "tools/pre-execute", "tools/post-execute", "ctx.schedule", "reminder", "ctx.userQuestions", "ask the user", "user-questions/request", "sidebar panel", "Web Client slot", "resource provider", "ctx.ptcRuntime", "ctx.sandbox", "ctx.sandboxPolicy", "PTC provider", "ctx.workingDirectory", "working_directory", "ctx.worktrees", "git worktree plugin", "appendPluginRecord", "pluginRecordOf", "PluginRecordMap", "agent.model", "model selection", "ctx.mcpManager", "register an MCP server", "ctx.sessionProjections", "session projection", "LlmRequestPurposeMap", "ctx.web", "registerSearchProvider", "search provider", "when condition", or any `plugins/*/src/*.ts` edit. Catalogs the plugin-facing shapes DSH supports with real, doc-verified code — so the plugin body comes from a confirmed DSL instead of a guessed or half-remembered one.
 ---
 
 # DSH Plugin Shapes
@@ -13,7 +13,7 @@ wrapper (`package.json`'s `dsh.bundle`, `cordis.patch.yml`) that every
 shape shares regardless of which one it implements — that's the
 tool-plugin generator's concern, not this skill's.
 
-**Verified against DSH tag `dsh-v0.2.2-rc.3`**, the tag `package.json` pins
+**Verified against DSH tag `dsh-v0.2.2-rc.5`**, the tag `package.json` pins
 `@deepseek-ai/dsh` and `@deepseek-ai/dsh-tools` to. Each shape cites the
 `docs/` files it was checked against.
 
@@ -1956,6 +1956,72 @@ compatibility rules, are owned by
 `packages/session/session-projection/README.md`, which this skill did not
 read. Confirm both before relying on them.
 
+## Shape 19: Web search/fetch provider plugin (`ctx.web`)
+
+A plugin that adds a search or fetch backend behind the model-facing
+`web_search`/`web_fetch` tools, or calls the web seam directly. Confirmed
+against `docs/subsystems/web.md` (`WebRuntime`, package
+`@deepseek-ai/dsh-web`) and the provider interfaces in
+`packages/web/web/src/types.ts`. Providers register capabilities, not
+tools: the tool names, schemas, and presentation stay in `dsh-tool-web`.
+
+```ts
+export const inject = ['web']
+export function apply(ctx: Context) {
+  ctx.web.registerSearchProvider({
+    id: 'my-search',
+    title: 'My Search',
+    available: () => Boolean(process.env.MY_SEARCH_KEY),
+    async search(request, signal) {
+      // request: { query, maxResults?, llmProvider? }
+      const sources = await querySearchBackend(request.query, request.maxResults, signal)
+      return { sources, truncated: false }
+    },
+  })
+}
+```
+
+`registerSearchProvider(provider)` and `registerFetchProvider(provider)`
+return a synchronous `() => void` disposer; registration also ends with
+the calling fiber, and each registration or disposal emits the
+payload-free `web/providers-changed` event. A duplicate `id` throws
+`WebError` `WEB_DUPLICATE_PROVIDER`. A provider has `id`, optional
+`title` and localized `description`, `available(): boolean` (a local
+check that makes no network calls), an optional
+`ready(llmProvider): Promise<boolean>` (configuration-only: whether that
+chat route has a credential to send; omitted counts as ready), and
+`search(request, signal?)` or `fetch(request, signal?)`.
+
+A search returns `WebSearchResult` — `{ content?, sources, truncated }`,
+each source `{ url, title?, snippet?, summary?, publishedAt? }`; the seam
+truncates `sources` to `maxResults` and sets `truncated` itself. A fetch
+takes `{ url }` and returns `{ url, statusCode, body, truncated }`, where
+`body` is `{ kind: 'html' | 'text', content }` and `url` is the final URL
+after redirects; a non-2xx response is a result, not a throw. Raise a
+failure as a `WebError` with an open-string `code`; consumers tolerate
+codes they don't know.
+
+Selection happens at call time: a configured `searchProvider`/
+`fetchProvider` id wins. With no search id configured, a search for a
+model request on the `deepseek-official` or `deepseek-account` route runs
+`deepseek-official`, and on any other route or outside a model request
+runs `deepseek-search-api`, when that provider is registered and usable.
+Otherwise exactly one usable provider auto-selects, and two or more are
+`WEB_PROVIDER_AMBIGUOUS`. A new search provider therefore needs its id
+set in `searchProvider` before it runs in place of a usable DeepSeek
+provider.
+
+A plugin calling the seam directly uses `ctx.web.search(request,
+signal?)`, `ctx.web.fetch(request, signal?)`, `searchReady(llmProvider?)`
+and `fetchReady(llmProvider?)`, and the `@Remote` `listProviders()`. Set
+`llmProvider` on a search that serves a model request so selection
+follows that request's route.
+
+**Honesty note:** the example's `querySearchBackend` is a placeholder for
+the plugin's own backend call. `LocalizedText` (the `description` type)
+and the `WebError` constructor signature are owned by packages this skill
+did not read; confirm them before constructing either.
+
 ## Constraints
 
 - This skill catalogs shape and DSL only — it doesn't judge which shape
@@ -2013,7 +2079,8 @@ read. Confirm both before relying on them.
   with an unresolved caller-restriction question, thinner than any
   numbered shape until that README is read. Shape 17 leaves
   `McpServerRegistration` unresolved, and Shape 18's unit contract is
-  confirmed but its package README is unread. Treat every gap as a gap,
+  confirmed but its package README is unread. Shape 19 leaves
+  `LocalizedText` and the `WebError` constructor unresolved. Treat every gap as a gap,
   not as settled.
 - Doesn't cover the bundle/manifest wrapper (`package.json`'s `dsh.bundle`
   block, `files`, `cordis.patch.yml`'s `insert` entry) — that wrapper is
